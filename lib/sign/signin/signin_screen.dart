@@ -14,6 +14,22 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   User? _user;
 
+  @override
+  Widget build(BuildContext context) {
+    // 로그인된 경우 바로 HomeScreen으로 이동
+    return _user == null
+        ? Scaffold(
+          appBar: AppBar(title: const Text('Google 로그인 예제')),
+          body: Center(
+            child: ElevatedButton(
+              onPressed: _signInWithGoogle,
+              child: const Text('Google 로그인'),
+            ),
+          ),
+        )
+        : HomeScreen(user: _user);
+  }
+
   Future<void> _signInWithGoogle() async {
     try {
       final googleUser = await GoogleSignIn().signIn();
@@ -36,23 +52,5 @@ class _SignInScreenState extends State<SignInScreen> {
     } catch (e) {
       debugPrint("로그인 실패: $e");
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // 로그인된 경우 바로 HomeScreen으로 이동
-    return _user == null
-        ? Scaffold(
-          appBar: AppBar(title: const Text('Google 로그인 예제')),
-          body: Center(
-            child: ElevatedButton(
-              onPressed: _signInWithGoogle,
-              child: const Text('Google 로그인'),
-            ),
-          ),
-        )
-        : HomeScreen(
-          user: _user,
-        );
   }
 }
