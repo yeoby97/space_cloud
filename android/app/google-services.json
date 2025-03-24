@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1094957991619",
+    "project_id": "spacecloud-5dde5",
+    "storage_bucket": "spacecloud-5dde5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1094957991619:android:89c17594dc4322a6584476",
+        "android_client_info": {
+          "package_name": "com.example.space_cloud"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAnWXYDvZQdH_TAbd834KvJ9vnpXLLk64"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
