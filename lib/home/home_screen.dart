@@ -2,119 +2,99 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
-import 'package:space_cloud/detail/detail_info.dart';
-class HomeScreen extends StatefulWidget {
-  final User? _user;
-  const HomeScreen({
-    required User? user,
-    super.key,
-  }) : _user = user;
+import 'package:space_cloud/home/Info.dart';
+import 'package:space_cloud/home/home.dart';
+import 'package:space_cloud/home/reservation.dart';
+import 'package:space_cloud/home/warehouse.dart';
 
+class HomeScreen extends StatefulWidget {
+  final User? user;
+  const HomeScreen({
+    required this.user,
+    super.key,
+  });
+  
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final Map<String, Marker> _markers = {};
-  late GoogleMapController _mapController;
+  int _currentIndex = 0;
+
+  final List<Map<String, dynamic>> _navItems = const [    // NavigationBarItem 목록
+    {'icon': Icons.home, 'label': '홈',},
+    {'icon': Icons.warehouse, 'label': '내 창고',},
+    {'icon': Icons.calendar_month, 'label': '예약현황',},
+    {'icon': Icons.person, 'label': '내 정보',},
+  ];
+  final List<Widget> _bodies = const [
+    Home(),
+    Warehouse(),
+    Reservation(),
+    Info(),
+  ];
+
+  @override
+  void initState() {
+    sendPermission();       // 권한 요청
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // _user가 null이 아니면 사용자 정보 출력
+
     return Scaffold(
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        onTap: (index){},
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '홈',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '홈',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '홈',
-          ),
-        ],
+      bottomNavigationBar: _BottomNavBar(
+        navItems: _navItems,
+        onTap: _onItemTapped,
+        currentIndex: _currentIndex,
       ),
-      body: Stack(
-        children: [
-          Expanded(
-            child: GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: const CameraPosition(
-                target: LatLng(35.873599, 128.631164),
-                zoom: 15,
-              ),
-              markers: _markers.values.toSet(),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: FloatingActionButton(
-              onPressed: _goToMyLocation,
-              child: const Icon(Icons.my_location),
-            ),
-          )
-        ],
-      ),
+      body: _bodies[_currentIndex]
     );
   }
 
-  void _onMapCreated(GoogleMapController controller){
-    _mapController = controller;
-    _goToMyLocation();
+  // 권한 요청 함수
+  Future<void> sendPermission() async{
 
-    setState(() {
-      _markers.clear();
-      _markers['대구'] = Marker(
-        markerId: const MarkerId('대구'),
-        position: const LatLng(35.873599, 128.631164),
-        onTap: (){
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const DetailInfo(),
-            ),
-          );
-        }
-      );
-    });
-  }
-
-  Future<void> _goToMyLocation() async {
     Location location = Location();
 
     bool serviceEnabled = await location.serviceEnabled();
     if(!serviceEnabled) {
       serviceEnabled = await location.requestService();
-      if (!serviceEnabled) return;
     }
 
     PermissionStatus permissionGranted = await location.hasPermission();
-
     if (permissionGranted == PermissionStatus.denied) {
       permissionGranted = await location.requestPermission();
-      if( permissionGranted != PermissionStatus.granted) return;
     }
-    
-    LocationData myLocation = await location.getLocation();
-    
-    _mapController.animateCamera(
-      CameraUpdate.newLatLng(
-        LatLng(myLocation.latitude!, myLocation.longitude!,),
-      ),
-    );
+  }
 
+  void _onItemTapped(index) {
     setState(() {
-      _markers['내 위치'] = Marker(
-        markerId: MarkerId('myLocation'),
-        position: LatLng(myLocation.latitude!, myLocation.longitude!),
-        infoWindow: InfoWindow(title: '내 위치'),
-      );
+      _currentIndex = index;
     });
+  }
+}
+
+// NavigationBar
+class _BottomNavBar extends StatelessWidget {
+  final List<Map<String, dynamic>> navItems;
+  final ValueChanged<int>? onTap;
+  final int currentIndex;
+  const _BottomNavBar({super.key, required this.navItems, required this.onTap,required this.currentIndex});
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      currentIndex: currentIndex,
+      type: BottomNavigationBarType.fixed,
+      onTap: onTap,
+      items:  navItems.map((item) => BottomNavigationBarItem(
+        icon: Icon(item['icon']),
+        label: item['label'],
+        ),
+      ).
+      toList(),
+    );
   }
 }
