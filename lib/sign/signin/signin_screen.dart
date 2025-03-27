@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import '../../home/home_screen.dart';
+import '../../main/main_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -27,7 +27,7 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           ),
         )
-        : HomeScreen(user: _user);
+        : MainScreen(user: _user);
   }
 
   Future<void> _signInWithGoogle() async {
