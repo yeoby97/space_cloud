@@ -24,31 +24,24 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(title: const Text("Map Example")),
       body: Stack(
         children: [
-          Consumer<MyLocationViewModel>(
-            builder: (context, viewModel, child) {
-              final currentPosition = viewModel.currentPosition;
-
-              if (currentPosition == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              return showGoogleMap(currentPosition);
-            },
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: FloatingActionButton(
-                onPressed: () {
-                  _goToCurrentLocation();
-                },
-                child: const Icon(Icons.location_searching),
-              ),
-            ),
-          ),
+          _googleMap(),
+          _floatingButton(),
         ]
       ),
+    );
+  }
+
+  Consumer<MyLocationViewModel> _googleMap() {
+    return Consumer<MyLocationViewModel>(
+      builder: (context, viewModel, child) {
+        final currentPosition = viewModel.currentPosition;
+
+        if (currentPosition == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return showGoogleMap(currentPosition);
+      },
     );
   }
 
@@ -64,6 +57,21 @@ class _HomeScreenState extends State<HomeScreen> {
         _mapController = controller; // GoogleMapController 초기화
       },
       markers: _markers.values.toSet(),
+    );
+  }
+
+  Align _floatingButton() {
+    return Align(
+      alignment: Alignment.bottomLeft,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: FloatingActionButton(
+          onPressed: () {
+            _goToCurrentLocation();
+          },
+          child: const Icon(Icons.location_searching),
+        ),
+      ),
     );
   }
 
