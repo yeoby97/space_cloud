@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:space_cloud/main/home/search_screen.dart';
 
 import 'my_location_view_model.dart';
 
@@ -21,10 +22,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Map Example")),
       body: Stack(
         children: [
           _googleMap(),
+          _SearchBox(onTap: _onTap,),
           _floatingButton(),
         ]
       ),
@@ -64,8 +65,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Align(
       alignment: Alignment.bottomLeft,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(10.0),
         child: FloatingActionButton(
+          shape: CircleBorder(),
+          foregroundColor: Colors.black.withAlpha(150),
+          backgroundColor: Colors.white,
           onPressed: () {
             _goToCurrentLocation();
           },
@@ -86,5 +90,79 @@ class _HomeScreenState extends State<HomeScreen> {
         zoom: 18.0,
       ),
     ));
+  }
+
+  void _onTap() async{
+    final LatLng result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (BuildContext context) {
+          return SearchScreen();
+        },
+      ),
+    );
+    _mapController.animateCamera(CameraUpdate.newCameraPosition(
+      CameraPosition(
+        bearing: 0,
+        target: LatLng(result.latitude, result.longitude),
+        zoom: 18.0,
+      ),
+    ));
+  }
+}
+
+class _SearchBox extends StatelessWidget {
+  final VoidCallback onTap;
+  const _SearchBox({super.key,required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: 500,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2), // 그림자 색상
+                    blurRadius: 10,   // 흐림 정도
+                    spreadRadius: 2,  // 그림자 확산 정도
+                    offset: Offset(3, 3), // X, Y 방향 위치 조정
+                  ),
+                ],
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Icon(Icons.map),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                        child: Text(
+                          '장소, 위치 검색',
+                          style: TextStyle(
+                            color: Colors.black.withAlpha(100),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.search),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );;
   }
 }
