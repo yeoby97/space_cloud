@@ -57,15 +57,17 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             debounceTime: 200,
             countries: ["kr"],
+            language: "ko",
             isLatLngRequired: true,
             getPlaceDetailWithLatLng: (Prediction prediction) {
-              LatLng location = LatLng(prediction.lat as double,prediction.lng as double);
+              LatLng location = LatLng(
+                double.parse(prediction.lat ?? "0.0"),
+                double.parse(prediction.lng ?? "0.0"),
+              );
               Navigator.of(context).pop(location);
             },
             itemClick: (Prediction prediction) {
               controller.text = prediction.description ?? "";
-              controller.selection = TextSelection.fromPosition(
-                  TextPosition(offset: prediction.description?.length ?? 0));
             },
             seperatedBuilder: Divider(),
             containerHorizontalPadding: 10,

@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
       CameraPosition(
         bearing: 0,
         target: LatLng(result.latitude, result.longitude),
-        zoom: 18.0,
+        zoom: 17.0,
       ),
     ));
   }
