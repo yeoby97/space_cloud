@@ -1,5 +1,4 @@
-import 'dart:developer';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -18,6 +17,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final Map<String, Marker> _markers = {}; // 창고들 마커로 표기
   late GoogleMapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWarehouseMarkers(); // 마커 불러오기
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTap() async{
-    final LatLng result = await Navigator.of(context).push(
+    final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (BuildContext context) {
           return SearchScreen();
@@ -103,10 +108,39 @@ class _HomeScreenState extends State<HomeScreen> {
     _mapController.animateCamera(CameraUpdate.newCameraPosition(
       CameraPosition(
         bearing: 0,
-        target: LatLng(result.latitude, result.longitude),
+        target: result["location"],
         zoom: 17.0,
       ),
     ));
+  }
+
+  Future<void> _loadWarehouseMarkers() async {
+    final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
+
+    final markers = <String, Marker>{};
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+
+      final lat = data['lat'];
+      final lng = data['lng'];
+      final address = data['address'] ?? '주소 없음';
+      print(lat);
+      print(lng);
+      final marker = Marker(
+        markerId: MarkerId(doc.id),
+        position: LatLng(lat, lng),
+        infoWindow: InfoWindow(title: address),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      );
+
+      markers[doc.id] = marker;
+    }
+
+    setState(() {
+      _markers.clear();
+      _markers.addAll(markers);
+    });
   }
 }
 
@@ -163,6 +197,6 @@ class _SearchBox extends StatelessWidget {
           ),
         ),
       ),
-    );;
+    );
   }
 }

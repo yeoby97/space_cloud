@@ -64,7 +64,13 @@ class _SearchScreenState extends State<SearchScreen> {
                 double.parse(prediction.lat ?? "0.0"),
                 double.parse(prediction.lng ?? "0.0"),
               );
-              Navigator.of(context).pop(location);
+              String address = prediction.description ?? "";
+
+              // LatLng + address 함께 보내기
+              Navigator.of(context).pop({
+                "location": location,
+                "address": address,
+              });
             },
             itemClick: (Prediction prediction) {
               controller.text = prediction.description ?? "";
