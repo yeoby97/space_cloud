@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // ✅ 추가
 import '../../data/warehouse.dart';
 
 class CustomBottomSheet extends StatefulWidget {
   final Warehouse warehouse;
   final VoidCallback onClose;
   final VoidCallback onTap;
-  final bool isInitial; // ⭐ 추가
+  final bool isInitial;
 
   const CustomBottomSheet({
     super.key,
     required this.warehouse,
     required this.onClose,
     required this.onTap,
-    this.isInitial = true, // 기본값 true
+    this.isInitial = true,
   });
 
   @override
@@ -22,8 +23,10 @@ class CustomBottomSheet extends StatefulWidget {
 class _CustomBottomSheetState extends State<CustomBottomSheet> {
   double _sheetHeight = 300;
   final double _minHeight = 0;
-  final double _maxHeight = 850;
+  final double _maxHeight = 700;
   double _dragStart = 0;
+
+  final NumberFormat numberFormat = NumberFormat.decimalPattern(); // ✅ 숫자 포맷
 
   @override
   void initState() {
@@ -64,7 +67,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
     } else {
       if (delta > 0) {
         setState(() => _sheetHeight = 300);
-      } else if (delta < 0){
+      } else if (delta < 0) {
         setState(() => _sheetHeight = _maxHeight);
       } else {
         if ((_sheetHeight - 300) < (_maxHeight - _sheetHeight)) {
@@ -100,7 +103,6 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
         ),
         child: Column(
           children: [
-            // 드래그 핸들바
             GestureDetector(
               onVerticalDragStart: _handleDragStart,
               onVerticalDragUpdate: _handleDragUpdate,
@@ -137,11 +139,14 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                         ),
                       ),
                     const SizedBox(height: 10),
-                    Text(widget.warehouse.address, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                      widget.warehouse.address,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                     Text(widget.warehouse.detailAddress),
                     const SizedBox(height: 6),
-                    Text('가격: ${widget.warehouse.price}원'),
-                    Text('보관 공간: ${widget.warehouse.count}칸'),
+                    Text('가격: ${numberFormat.format(widget.warehouse.price)}원'), // ✅ 쉼표 포맷
+                    Text('보관 공간: ${numberFormat.format(widget.warehouse.count)}칸'), // ✅ 쉼표 포맷
                     const SizedBox(height: 6),
                     Text('등록일: ${widget.warehouse.createdAt?.toLocal().toString().split(' ').first}'),
                     const SizedBox(height: 10),

@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_selectedWarehouse != null)
             CustomBottomSheet(
               warehouse: _selectedWarehouse!,
-              isInitial: !_isSheetOpen, // 처음 열릴 때만 true
+              isInitial: !_isSheetOpen,
               onClose: () {
                 setState(() {
                   _selectedWarehouse = null;
@@ -176,16 +176,16 @@ class _SearchBox extends StatelessWidget {
           child: GestureDetector(
             onTap: onTap,
             child: Container(
-              width: 500,
+              width: double.infinity,
               height: 60,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2), // 그림자 색상
-                    blurRadius: 10,   // 흐림 정도
-                    spreadRadius: 2,  // 그림자 확산 정도
-                    offset: Offset(3, 3), // X, Y 방향 위치 조정
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                    offset: Offset(3, 3),
                   ),
                 ],
                 borderRadius: BorderRadius.circular(10.0),

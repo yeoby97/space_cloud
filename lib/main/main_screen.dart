@@ -4,7 +4,7 @@ import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
-import 'package:space_cloud/main/warehouse/warehouse_screen.dart';
+import 'package:space_cloud/main/warehouse/my_warehouse_screen.dart';
 import 'package:space_cloud/main/info/info_screen.dart';
 import 'package:space_cloud/main/home/home_screen.dart';
 import 'package:space_cloud/main/list/list_screen.dart';
@@ -28,7 +28,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _bodies = const [
     HomeScreen(),
-    WarehouseScreen(),
+    MyWarehouseScreen(),
     ListScreen(),
     InfoScreen(),
   ];
