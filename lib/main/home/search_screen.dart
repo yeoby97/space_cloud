@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_places_flutter/google_places_flutter.dart';
-import 'package:google_places_flutter/model/prediction.dart';
+import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart';
+
+const String kGoogleApiKey = 'AIzaSyAuhd1aQTSgjtgnydP3_wgD3SDD2QD-VGU';
+final GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
 
 class SearchScreen extends StatefulWidget {
-
   const SearchScreen({super.key});
 
   @override
@@ -12,87 +15,122 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  TextEditingController controller = TextEditingController();
+  final TextEditingController _controller = TextEditingController();
+  List<Prediction> _predictions = [];
+  LatLng? selectedLatLng;
   String? selectedAddress;
-  String? selectedLatLng;
+  Timer? _debounce;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView( // 스크롤 가능하게
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            placesAutoCompleteTextField(),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              // 텍스트 박스
+              Container(
+                width: 500,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                      offset: Offset(3, 3),
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                child: TextField(
+                  controller: _controller,
+                  onChanged: _onChanged,
+                  decoration: InputDecoration(
+                    hintText: "Search your location",
+                    prefixIcon: Icon(Icons.search),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 18),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+
+              // 자동완성 리스트
+              if (_predictions.isNotEmpty)
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _predictions.length,
+                    separatorBuilder: (context, index) => Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final prediction = _predictions[index];
+                      return ListTile(
+                        leading: Icon(Icons.location_on),
+                        title: Text(prediction.description ?? ""),
+                        onTap: () => _selectPrediction(prediction),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  placesAutoCompleteTextField() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Container(
-          child: GooglePlaceAutoCompleteTextField(
-            boxDecoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2), // 그림자 색상
-                  blurRadius: 10,   // 흐림 정도
-                  spreadRadius: 2,  // 그림자 확산 정도
-                  offset: Offset(3, 3), // X, Y 방향 위치 조정
-                ),
-              ],
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            textEditingController: controller,
-            googleAPIKey: 'AIzaSyAuhd1aQTSgjtgnydP3_wgD3SDD2QD-VGU',
-            inputDecoration: InputDecoration(
-              hintText: "Search your location",
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-            ),
-            debounceTime: 200,
-            countries: ["kr"],
-            language: "ko",
-            isLatLngRequired: true,
-            getPlaceDetailWithLatLng: (Prediction prediction) {
-              LatLng location = LatLng(
-                double.parse(prediction.lat ?? "0.0"),
-                double.parse(prediction.lng ?? "0.0"),
-              );
-              String address = prediction.description ?? "";
+  void _onChanged(String value) async {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
 
-              // LatLng + address 함께 보내기
-              Navigator.of(context).pop({
-                "location": location,
-                "address": address,
-              });
-            },
-            itemClick: (Prediction prediction) {
-              controller.text = prediction.description ?? "";
-            },
-            seperatedBuilder: Divider(),
-            containerHorizontalPadding: 10,
-            itemBuilder: (context, index, Prediction prediction) {
-              return Container(
-                padding: EdgeInsets.all(10),
-                child: Row(
-                  children: [
-                    Icon(Icons.location_on),
-                    SizedBox(width: 7),
-                    Expanded(child: Text("${prediction.description ?? ""}"))
-                  ],
-                ),
-              );
-            },
-            isCrossBtnShown: true,
-          ),
-        ),
-      ),
-    );
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      if (value.isEmpty) {
+        setState(() {
+          _predictions = [];
+        });
+        return;
+      }
+
+      final response = await _places.autocomplete(
+        value,
+        language: 'ko',
+        components: [Component(Component.country, "kr")],
+      );
+
+      if (response.isOkay) {
+        setState(() {
+          _predictions = response.predictions;
+        });
+      } else {
+        print("Autocomplete error: ${response.errorMessage}");
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel(); // 메모리 누수 방지
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectPrediction(Prediction p) async {
+    final detail = await _places.getDetailsByPlaceId(p.placeId!);
+    final lat = detail.result.geometry!.location.lat;
+    final lng = detail.result.geometry!.location.lng;
+    final address = p.description ?? "";
+
+    setState(() {
+      selectedLatLng = LatLng(lat, lng);
+      selectedAddress = address;
+      _controller.text = address;
+      _predictions = [];
+    });
+
+    Navigator.of(context).pop({
+      "location": selectedLatLng,
+      "address": selectedAddress,
+    });
   }
 }

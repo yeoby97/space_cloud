@@ -157,7 +157,7 @@ class _SearchBox extends StatelessWidget {
             onTap: onTap,
             child: Container(
               width: 500,
-              height: 50,
+              height: 60,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
