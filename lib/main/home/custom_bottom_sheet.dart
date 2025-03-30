@@ -5,12 +5,14 @@ class CustomBottomSheet extends StatefulWidget {
   final Warehouse warehouse;
   final VoidCallback onClose;
   final VoidCallback onTap;
+  final bool isInitial; // ⭐ 추가
 
   const CustomBottomSheet({
     super.key,
     required this.warehouse,
     required this.onClose,
     required this.onTap,
+    this.isInitial = true, // 기본값 true
   });
 
   @override
@@ -22,6 +24,22 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
   final double _minHeight = 0;
   final double _maxHeight = 850;
   double _dragStart = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.isInitial) {
+      _sheetHeight = 0;
+      Future.microtask(() {
+        setState(() {
+          _sheetHeight = 300;
+        });
+      });
+    } else {
+      _sheetHeight = 300;
+    }
+  }
 
   void _handleDragStart(DragStartDetails details) {
     _dragStart = details.globalPosition.dy;

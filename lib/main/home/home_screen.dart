@@ -20,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final List<Marker> _markers = [];
   Warehouse? _selectedWarehouse;
+  bool _isSheetOpen = false;
   late GoogleMapController _mapController;
 
   @override
@@ -39,7 +40,13 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_selectedWarehouse != null)
             CustomBottomSheet(
               warehouse: _selectedWarehouse!,
-              onClose: () => setState(() => _selectedWarehouse = null),
+              isInitial: !_isSheetOpen, // 처음 열릴 때만 true
+              onClose: () {
+                setState(() {
+                  _selectedWarehouse = null;
+                  _isSheetOpen = false;
+                });
+              },
               onTap: () {
                 Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => WarehouseDetail(warehouse: _selectedWarehouse!),
@@ -137,6 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         onTap: () {
           setState(() {
+            _isSheetOpen = _selectedWarehouse != null;
             _selectedWarehouse = warehouse;
           });
         },
