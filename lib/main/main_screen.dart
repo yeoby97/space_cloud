@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import 'package:space_cloud/main/warehouse/warehouse_screen.dart';
 import 'package:space_cloud/main/info/info_screen.dart';
@@ -24,13 +25,15 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  late Location _location;
 
-  final List<Map<String, dynamic>> _navItems = const [    // NavigationBarItem 목록
-    {'icon': Icons.home, 'label': '홈',},
-    {'icon': Icons.warehouse, 'label': '내 창고',},
-    {'icon': Icons.calendar_month, 'label': '예약현황',},
-    {'icon': Icons.person, 'label': '내 정보',},
+  final List<Map<String, dynamic>> _navItems = const [
+    {'icon': Icons.home, 'label': '홈'},
+    {'icon': Icons.warehouse, 'label': '내 창고'},
+    {'icon': Icons.calendar_month, 'label': '예약현황'},
+    {'icon': Icons.person, 'label': '내 정보'},
   ];
+
   final List<Widget> _bodies = const [
     HomeScreen(),
     WarehouseScreen(),
@@ -38,83 +41,69 @@ class _MainScreenState extends State<MainScreen> {
     InfoScreen(),
   ];
 
-  late Location _location;
-
-  @override
-  void initState() {
-    super.initState();
-    _location = Location();
-    sendPermission();       // 권한 요청
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => MyLocationViewModel(),
       child: Scaffold(
-        bottomNavigationBar: _BottomNavBar(
-          navItems: _navItems,
-          onTap: _onItemTapped,
-          currentIndex: _currentIndex,
-        ),
         body: _bodies[_currentIndex],
+        floatingActionButton: SpeedDial(
+          animatedIcon: AnimatedIcons.menu_close,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black.withAlpha(150),
+          overlayOpacity: 0.3,
+          spacing: 10,
+          spaceBetweenChildren: 10,
+          children: [
+            SpeedDialChild(
+              child: Icon(Icons.home),
+              label: '홈',
+              onTap: () => _setTab(0),
+            ),
+            SpeedDialChild(
+              child: Icon(Icons.warehouse),
+              label: '내 창고',
+              onTap: () => _setTab(1),
+            ),
+            SpeedDialChild(
+              child: Icon(Icons.calendar_month),
+              label: '예약현황',
+              onTap: () => _setTab(2),
+            ),
+            SpeedDialChild(
+              child: Icon(Icons.person),
+              label: '내 정보',
+              onTap: () => _setTab(3),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // 권한 요청 함수
+  @override
+  void initState() {
+    super.initState();
+    _location = Location();
+    sendPermission();
+  }
+
+  void _setTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   Future<void> sendPermission() async {
     bool serviceEnabled = await _location.serviceEnabled();
     if (!serviceEnabled) {
       serviceEnabled = await _location.requestService();
-      if (!serviceEnabled) {
-        // 위치 서비스가 비활성화된 경우 처리할 로직
-        return;
-      }
+      if (!serviceEnabled) return;
     }
 
     PermissionStatus permissionGranted = await _location.hasPermission();
     if (permissionGranted == PermissionStatus.denied) {
       permissionGranted = await _location.requestPermission();
     }
-    // 권한이 승인되었으면, 위치 서비스 활성화
-    if (permissionGranted == PermissionStatus.granted) {
-      // 위치 정보를 가져올 수 있도록 추가 로직을 작성할 수 있습니다.
-    }
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-}
-
-// NavigationBar
-class _BottomNavBar extends StatelessWidget {
-  final List<Map<String, dynamic>> navItems;
-  final ValueChanged<int>? onTap;
-  final int currentIndex;
-
-  const _BottomNavBar({
-    super.key,
-    required this.navItems,
-    required this.onTap,
-    required this.currentIndex,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      type: BottomNavigationBarType.fixed,
-      onTap: onTap,
-      items: navItems
-          .map((item) => BottomNavigationBarItem(
-        icon: Icon(item['icon']),
-        label: item['label'],
-      ))
-          .toList(),
-    );
   }
 }

@@ -54,6 +54,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   onChanged: _onChanged,
                   decoration: InputDecoration(
                     hintText: "장소나 위치를 검색하세요.",
+                    hintStyle: TextStyle(
+                      color: Colors.black.withAlpha(100),
+                    ),
                     prefixIcon: Icon(Icons.search),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 18),

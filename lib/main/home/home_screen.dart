@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _googleMap(),
           _SearchBox(onTap: _onTap,),
-          _floatingButton(),
+          SafeArea(child: _floatingButton()),
           if (_selectedWarehouse != null) _SelectedWarehouseCard(selectedWarehouse: _selectedWarehouse!),
         ]
       ),
@@ -57,11 +57,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   GoogleMap showGoogleMap(Position currentPosition) {
     return GoogleMap(
+      mapToolbarEnabled: false,
+      zoomControlsEnabled: false,
       myLocationEnabled: true,
       myLocationButtonEnabled: false,
       initialCameraPosition: CameraPosition(
         target: LatLng(currentPosition.latitude, currentPosition.longitude),
-        zoom: 18,
+        zoom: 16,
       ),
       onMapCreated: (controller) {
         _mapController = controller; // GoogleMapController 초기화
@@ -74,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Align(
       alignment: Alignment.bottomLeft,
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(20.0),
         child: FloatingActionButton(
           shape: CircleBorder(),
           foregroundColor: Colors.black.withAlpha(150),
@@ -96,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
       CameraPosition(
         bearing: 0,
         target: LatLng(currentPosition.latitude, currentPosition.longitude),
-        zoom: 18.0,
+        zoom: 16.0,
       ),
     ));
   }
@@ -113,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
       CameraPosition(
         bearing: 0,
         target: result["location"],
-        zoom: 17.0,
+        zoom: 16.0,
       ),
     ));
   }
@@ -183,7 +185,7 @@ class _SearchBox extends StatelessWidget {
                     Icon(Icons.map),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
                         child: Text(
                           '장소나 위치를 검색하세요.',
                           style: TextStyle(
