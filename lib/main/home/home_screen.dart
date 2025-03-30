@@ -125,8 +125,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final lat = data['lat'];
       final lng = data['lng'];
       final address = data['address'] ?? '주소 없음';
-      print(lat);
-      print(lng);
       final marker = Marker(
         markerId: MarkerId(doc.id),
         position: LatLng(lat, lng),

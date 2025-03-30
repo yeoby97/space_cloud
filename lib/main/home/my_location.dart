@@ -13,6 +13,7 @@ class MyLocation {
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
+        distanceFilter: 5, // 5m 이동 시 업데이트
       ),
     ).listen((Position position) {
       _locationController.add(position);
