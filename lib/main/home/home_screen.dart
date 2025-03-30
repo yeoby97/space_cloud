@@ -5,6 +5,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:space_cloud/main/home/search_screen.dart';
 
+import '../../data/warehouse.dart';
+import '../warehouse/warehouse_detail.dart';
 import 'my_location_view_model.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -15,7 +17,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final Map<String, Marker> _markers = {}; // 창고들 마커로 표기
+  final List<Marker> _markers = []; // 창고들 마커로 표기
+  Warehouse? _selectedWarehouse; // 선택된 창고 정보
   late GoogleMapController _mapController;
 
   @override
@@ -32,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _googleMap(),
           _SearchBox(onTap: _onTap,),
           _floatingButton(),
+          if (_selectedWarehouse != null) _SelectedWarehouseCard(selectedWarehouse: _selectedWarehouse!),
         ]
       ),
     );
@@ -62,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onMapCreated: (controller) {
         _mapController = controller; // GoogleMapController 초기화
       },
-      markers: _markers.values.toSet(),
+      markers: Set<Marker>.from(_markers),
     );
   }
 
@@ -117,22 +121,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadWarehouseMarkers() async {
     final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
 
-    final markers = <String, Marker>{};
+    final markers = <Marker>[];
 
     for (var doc in snapshot.docs) {
-      final data = doc.data();
+      final warehouse = Warehouse.fromDoc(doc);
 
-      final lat = data['lat'];
-      final lng = data['lng'];
-      final address = data['address'] ?? '주소 없음';
       final marker = Marker(
-        markerId: MarkerId(doc.id),
-        position: LatLng(lat, lng),
-        infoWindow: InfoWindow(title: address),
+        markerId: MarkerId(warehouse.id),
+        position: LatLng(warehouse.lat, warehouse.lng),
+        infoWindow: InfoWindow(title: warehouse.address),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        onTap: () {
+          setState(() {
+            _selectedWarehouse = warehouse; // 선택된 창고 정보 저장
+          });
+        },
       );
-
-      markers[doc.id] = marker;
+      markers.add(marker);
     }
 
     setState(() {
@@ -190,6 +195,159 @@ class _SearchBox extends StatelessWidget {
                     Icon(Icons.search),
                   ],
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedWarehouseCard extends StatefulWidget {
+  final selectedWarehouse;
+  const _SelectedWarehouseCard({super.key,required this.selectedWarehouse,});
+
+  @override
+  State<_SelectedWarehouseCard> createState() => _SelectedWarehouseCardState();
+}
+
+
+class _SelectedWarehouseCardState extends State<_SelectedWarehouseCard>
+  with SingleTickerProviderStateMixin{
+  late final AnimationController _controller;
+  late final Animation<Offset> _offsetAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _offsetAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 1.0), // 아래에서 시작
+      end: Offset.zero,              // 현재 위치로 이동
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    ));
+
+    _controller.forward(); // 애니메이션 시작
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _navigateToDetailPage() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (_, animation, __) => WarehouseDetail(warehouse: widget.selectedWarehouse!),
+        transitionsBuilder: (_, animation, __, child) {
+          final offsetAnimation = Tween<Offset>(
+            begin: const Offset(0, 1), // 아래에서 시작
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          ));
+
+          return SlideTransition(
+            position: offsetAnimation,
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SlideTransition(
+        position: _offsetAnimation,
+        child: GestureDetector(
+          onVerticalDragUpdate: (details) {
+            if (details.primaryDelta! < -15) {
+              // 위로 빠르게 드래그하면 페이지 이동
+              _navigateToDetailPage();
+            }
+          },
+          child: Container(
+            margin: EdgeInsets.zero,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+                bottom: Radius.circular(0),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  offset: const Offset(0, -4), // 위쪽 그림자
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  // 🔥 이미지
+                  if (widget.selectedWarehouse.images.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        widget.selectedWarehouse.images.first,
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+
+                  // 🔥 정보들
+                  Text(widget.selectedWarehouse.address, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(widget.selectedWarehouse.detailAddress),
+                  const SizedBox(height: 6),
+                  Text('가격: ${widget.selectedWarehouse.price}원'),
+                  Text('보관 공간: ${widget.selectedWarehouse.count}칸'),
+                  const SizedBox(height: 6),
+                  Text('등록일: ${widget.selectedWarehouse.createdAt.toLocal().toString().split(' ').first}'),
+
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () {
+
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

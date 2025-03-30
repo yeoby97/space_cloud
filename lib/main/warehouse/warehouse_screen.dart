@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../data/warehouse.dart';
 import '../home/search_screen.dart';
 
 class WarehouseScreen extends StatefulWidget {
@@ -248,16 +249,20 @@ class _WarehouseScreenState extends State<WarehouseScreen> {
       }
 
       // Firestore 저장
-      await FirebaseFirestore.instance.collection('warehouse').add({
-        'address': address,
-        'detailAddress': detailAddressController.text.trim(),
-        'lat' : location!.latitude,
-        'lng' : location!.longitude,
-        'images': imageUrls,
-        'price': int.tryParse(priceController.text) ?? 1000000,
-        'count': int.tryParse(numberController.text) ?? 0,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      final warehouse = Warehouse(
+        address: address!,
+        detailAddress: detailAddressController.text.trim(),
+        lat: location!.latitude,
+        lng: location!.longitude,
+        images: imageUrls,
+        price: int.tryParse(priceController.text) ?? 1000000,
+        count: int.tryParse(numberController.text) ?? 0,
+        createdAt: null, // 저장할 땐 null 넣고, 나중에 불러올 땐 서버에서 받은 값으로 처리
+      );
+
+      await FirebaseFirestore.instance
+          .collection('warehouse')
+          .add(warehouse.toMap());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("등록 완료!")));
     } catch (e) {
       print('업로드 실패: $e');
