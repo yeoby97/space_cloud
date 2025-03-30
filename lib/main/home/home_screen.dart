@@ -180,7 +180,7 @@ class _SearchBox extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10.0),
                         child: Text(
-                          '장소, 위치 검색',
+                          '장소나 위치를 검색하세요.',
                           style: TextStyle(
                             color: Colors.black.withAlpha(100),
                           ),

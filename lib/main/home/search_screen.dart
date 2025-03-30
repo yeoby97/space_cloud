@@ -1,14 +1,17 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart';
+import 'package:geolocator/geolocator.dart';
 
 const String kGoogleApiKey = 'AIzaSyAuhd1aQTSgjtgnydP3_wgD3SDD2QD-VGU';
 final GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final GoogleMapController? mapController;
+
+  const SearchScreen({super.key, this.mapController});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -16,10 +19,12 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
-  List<Prediction> _predictions = [];
-  LatLng? selectedLatLng;
-  String? selectedAddress;
+  final List<Prediction> _predictions = [];
+  final List<Map<String, dynamic>> _nearbyPlaces = [];
   Timer? _debounce;
+  bool _isLoading = false;
+
+  static const double maxDistanceInMeters = 10000; // 10km
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +34,8 @@ class _SearchScreenState extends State<SearchScreen> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              // 텍스트 박스
               Container(
-                width: 500,
+                width: double.infinity,
                 height: 60,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -49,29 +53,60 @@ class _SearchScreenState extends State<SearchScreen> {
                   controller: _controller,
                   onChanged: _onChanged,
                   decoration: InputDecoration(
-                    hintText: "Search your location",
+                    hintText: "장소나 위치를 검색하세요.",
                     prefixIcon: Icon(Icons.search),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 18),
                   ),
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-              // 자동완성 리스트
               if (_predictions.isNotEmpty)
                 Expanded(
                   child: ListView.separated(
                     itemCount: _predictions.length,
-                    separatorBuilder: (context, index) => Divider(height: 1),
+                    separatorBuilder: (_, __) => Divider(height: 1),
                     itemBuilder: (context, index) {
                       final prediction = _predictions[index];
                       return ListTile(
                         leading: Icon(Icons.location_on),
                         title: Text(prediction.description ?? ""),
-                        onTap: () => _selectPrediction(prediction),
+                        onTap: () => _onPlaceSelected(prediction),
                       );
                     },
+                  ),
+                ),
+
+              if (_nearbyPlaces.isNotEmpty || _isLoading)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "📦 10km 이내 추천 창고",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      if (_isLoading)
+                        const Center(child: CircularProgressIndicator()),
+                      if (!_isLoading)
+                        Expanded(
+                          child: ListView.separated(
+                            itemCount: _nearbyPlaces.length,
+                            separatorBuilder: (_, __) => Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final place = _nearbyPlaces[index];
+                              return ListTile(
+                                leading: Icon(Icons.warehouse),
+                                title: Text(place['name']),
+                                subtitle: Text("${(place['distance'] / 1000).toStringAsFixed(2)} km 거리"),
+                                onTap: () => _onWarehouseSelected(place),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
                   ),
                 ),
             ],
@@ -81,16 +116,48 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  void _onChanged(String value) async {
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialNearbyPlaces();
+  }
+
+  Future<void> _loadInitialNearbyPlaces() async {
+    final currentLocation = await _getCurrentLocation();
+    if (currentLocation != null) {
+      await _fetchNearbyPlaces(currentLocation);
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
     _debounce = Timer(const Duration(milliseconds: 300), () async {
-      if (value.isEmpty) {
+      if (value.trim().isEmpty) {
         setState(() {
-          _predictions = [];
+          _predictions.clear();
         });
+
+        final currentLocation = await _getCurrentLocation();
+        if (currentLocation != null) {
+          await _fetchNearbyPlaces(currentLocation);
+        } else {
+          print("현재 위치를 가져올 수 없습니다.");
+          setState(() {
+            _nearbyPlaces.clear();
+          });
+        }
         return;
       }
+
+      setState(() => _isLoading = true);
 
       final response = await _places.autocomplete(
         value,
@@ -100,37 +167,105 @@ class _SearchScreenState extends State<SearchScreen> {
 
       if (response.isOkay) {
         setState(() {
-          _predictions = response.predictions;
+          _predictions
+            ..clear()
+            ..addAll(response.predictions);
         });
-      } else {
-        print("Autocomplete error: ${response.errorMessage}");
       }
+
+      await _updateNearbyFromInput(value);
     });
   }
 
-  @override
-  void dispose() {
-    _debounce?.cancel(); // 메모리 누수 방지
-    _controller.dispose();
-    super.dispose();
+  Future<void> _updateNearbyFromInput(String input) async {
+    try {
+      final search = await _places.searchByText(input);
+      if (search.status == 'OK' && search.results.isNotEmpty) {
+        final result = search.results.first;
+        final lat = result.geometry!.location.lat;
+        final lng = result.geometry!.location.lng;
+        final base = LatLng(lat, lng);
+        await _fetchNearbyPlaces(base);
+      }
+    } catch (e) {
+      print("주소 검색 실패: $e");
+      setState(() => _isLoading = false);
+    }
   }
 
-  Future<void> _selectPrediction(Prediction p) async {
-    final detail = await _places.getDetailsByPlaceId(p.placeId!);
-    final lat = detail.result.geometry!.location.lat;
-    final lng = detail.result.geometry!.location.lng;
-    final address = p.description ?? "";
+  Future<void> _fetchNearbyPlaces(LatLng base) async {
+    setState(() => _isLoading = true);
+
+    final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
+
+    final places = snapshot.docs.map((doc) {
+      final data = doc.data();
+      if (!data.containsKey('lat') || !data.containsKey('lng')) return null;
+
+      final lat = data['lat'];
+      final lng = data['lng'];
+      final address = data['address'] ?? doc.id;
+
+      final distance = Geolocator.distanceBetween(
+        base.latitude, base.longitude, lat, lng,
+      );
+
+      if (distance > maxDistanceInMeters) return null;
+
+      return {
+        'name': address,
+        'distance': distance,
+        'latLng': LatLng(lat, lng),
+      };
+    }).whereType<Map<String, dynamic>>().toList();
+
+    places.sort((a, b) => a['distance'].compareTo(b['distance']));
 
     setState(() {
-      selectedLatLng = LatLng(lat, lng);
-      selectedAddress = address;
-      _controller.text = address;
-      _predictions = [];
+      _nearbyPlaces
+        ..clear()
+        ..addAll(places);
+      _isLoading = false;
     });
+  }
+
+  Future<LatLng?> _getCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return null;
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return null;
+      }
+    }
+
+    final position = await Geolocator.getCurrentPosition();
+    return LatLng(position.latitude, position.longitude);
+  }
+
+  void _onPlaceSelected(Prediction prediction) async {
+    final detail = await _places.getDetailsByPlaceId(prediction.placeId!);
+    final lat = detail.result.geometry!.location.lat;
+    final lng = detail.result.geometry!.location.lng;
+
+    final target = LatLng(lat, lng);
+    widget.mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 15));
 
     Navigator.of(context).pop({
-      "location": selectedLatLng,
-      "address": selectedAddress,
+      "location": target,
+      "address": prediction.description,
+    });
+  }
+
+  void _onWarehouseSelected(Map<String, dynamic> place) {
+    final LatLng location = place['latLng'];
+    widget.mapController?.animateCamera(CameraUpdate.newLatLngZoom(location, 15));
+
+    Navigator.of(context).pop({
+      "location": location,
+      "address": place['name'],
     });
   }
 }
