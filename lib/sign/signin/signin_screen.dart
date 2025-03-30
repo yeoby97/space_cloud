@@ -19,7 +19,6 @@ class _SignInScreenState extends State<SignInScreen> {
     // 로그인된 경우 바로 HomeScreen으로 이동
     return _user == null
         ? Scaffold(
-          appBar: AppBar(title: const Text('Google 로그인 예제')),
           body: Center(
             child: ElevatedButton(
               onPressed: _signInWithGoogle,

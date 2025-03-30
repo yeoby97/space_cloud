@@ -281,7 +281,10 @@ class _WarehouseScreenState extends State<WarehouseScreen> {
 class _PhotoButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _PhotoButton({super.key, required this.onTap});
+  const _PhotoButton({
+    super.key,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +314,10 @@ class _PhotoButton extends StatelessWidget {
 class _PhotoList extends StatelessWidget {
   final List<XFile>? pickedImages;
 
-  const _PhotoList({super.key, required this.pickedImages});
+  const _PhotoList({
+    super.key,
+    required this.pickedImages,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -26,13 +25,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   late Location _location;
-
-  final List<Map<String, dynamic>> _navItems = const [
-    {'icon': Icons.home, 'label': '홈'},
-    {'icon': Icons.warehouse, 'label': '내 창고'},
-    {'icon': Icons.calendar_month, 'label': '예약현황'},
-    {'icon': Icons.person, 'label': '내 정보'},
-  ];
 
   final List<Widget> _bodies = const [
     HomeScreen(),
