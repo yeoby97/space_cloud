@@ -184,9 +184,9 @@ class _InfoScreenState extends State<InfoScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.history, size: 30),
+                              Icon(Icons.calendar_today_outlined, size: 30),
                               SizedBox(height: 4),
-                              Text('이용내역'),
+                              Text('예약내역'),
                             ],
                           ),
                         ),
