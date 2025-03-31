@@ -1,15 +1,15 @@
 class AppUser {
   final String uid;
-  final String? email;
-  final String? displayName;
+  final String email;
+  final String displayName;
   final String? photoURL;
   final String phoneNumber;
 
   AppUser({
     required this.uid,
     required this.phoneNumber,
-    this.email,
-    this.displayName,
+    required this.email,
+    required this.displayName,
     this.photoURL,
   });
 
@@ -30,6 +30,21 @@ class AppUser {
       displayName: map['displayName'],
       photoURL: map['photoURL'],
       phoneNumber: map['phoneNumber'],
+    );
+  }
+
+  AppUser copyWith({
+    String? displayName,
+    String? email,
+    String? phoneNumber,
+    String? photoURL,
+  }) {
+    return AppUser(
+      uid: uid,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      photoURL: photoURL ?? this.photoURL,
     );
   }
 }
