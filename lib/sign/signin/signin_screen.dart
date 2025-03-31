@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
 import '../../data/user.dart';
 import '../../main/main_screen.dart';
 
@@ -53,8 +51,8 @@ class _SignInScreenState extends State<SignInScreen> {
       if (firebaseUser != null) {
         final newUser = AppUser(
           uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
+          email: firebaseUser.email!,
+          displayName: firebaseUser.displayName!,
           photoURL: firebaseUser.photoURL,
           phoneNumber: firebaseUser.phoneNumber ?? '01012345678', // null 방지
         );
