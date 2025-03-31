@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:space_cloud/main/warehouse/warehouse_register_screen.dart';
 import '../../data/warehouse.dart';
-import '../warehouse/warehouse_detail.dart';
+import '../warehouse/warehouse_management.dart';
 
 class MyWarehouseScreen extends StatelessWidget {
   const MyWarehouseScreen({super.key});
@@ -78,7 +78,7 @@ class MyWarehouseScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => WarehouseDetail(warehouse: warehouse),
+                        builder: (_) => WarehouseManagement(warehouse: warehouse),
                       ),
                     );
                   },

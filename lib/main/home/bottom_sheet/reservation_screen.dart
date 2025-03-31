@@ -166,10 +166,12 @@ class _ReservationScreenState extends State<ReservationScreen> {
         .collection('spaces')
         .doc(widget.spaceDocId)
         .collection('reservations')
-        .add({
+        .doc(start.toIso8601String()) // ✅ 시작 시간을 문서 ID로
+        .set({
       'start': start.toIso8601String(),
       'end': end.toIso8601String(),
       'reservedBy': user.uid,
+      'reservedByName': user.displayName ?? '알 수 없음',
     });
 
     if (mounted) Navigator.of(context).pop(); // 등록 후 뒤로

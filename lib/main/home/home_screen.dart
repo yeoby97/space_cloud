@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:space_cloud/main/home/search_screen.dart';
 
 import '../../data/warehouse.dart';
-import '../warehouse/warehouse_detail.dart';
+import '../warehouse/warehouse_management.dart';
 import 'bottom_sheet/custom_bottom_sheet.dart';
 import 'my_location/my_location_view_model.dart';
 
@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               onTap: () {
                 Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => WarehouseDetail(warehouse: _selectedWarehouse!),
+                  builder: (_) => WarehouseManagement(warehouse: _selectedWarehouse!),
                 ));
               },
             ),

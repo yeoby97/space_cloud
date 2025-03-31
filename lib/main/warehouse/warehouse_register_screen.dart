@@ -335,13 +335,9 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
       // 공간 정보 저장
       for (int r = 0; r < rows; r++) {
         for (int c = 0; c < columns; c++) {
-          final spaceId = '${String.fromCharCode(65 + r)}${c + 1}'; // A1, A2, ...
-          await docRef.collection('spaces').add({
+          final spaceId = '${String.fromCharCode(65 + r)}${c + 1}';
+          await docRef.collection('spaces').doc(spaceId).set({
             'spaceId': spaceId,
-            'isReserved': false,
-            'reservedBy': null,
-            'startDate': null,
-            'endDate': null,
           });
         }
       }
