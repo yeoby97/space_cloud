@@ -1,11 +1,11 @@
-class User {
+class AppUser {
   final String uid;
   final String? email;
   final String? displayName;
   final String? photoURL;
   final String phoneNumber;
 
-  User({
+  AppUser({
     required this.uid,
     required this.phoneNumber,
     this.email,
@@ -23,8 +23,8 @@ class User {
     };
   }
 
-  factory User.fromMap(Map<String, dynamic> map) {
-    return User(
+  factory AppUser.fromMap(Map<String, dynamic> map) {
+    return AppUser(
       uid: map['uid'],
       email: map['email'],
       displayName: map['displayName'],
