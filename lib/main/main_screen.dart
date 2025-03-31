@@ -12,9 +12,7 @@ import 'package:space_cloud/main/list/list_screen.dart';
 import 'home/my_location_view_model.dart';
 
 class MainScreen extends StatefulWidget {
-  final User? user;
   const MainScreen({
-    required this.user,
     super.key,
   });
 
