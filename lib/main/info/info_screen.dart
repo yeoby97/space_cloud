@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:space_cloud/main/info/usage_history_screen.dart';
+import 'package:space_cloud/main/info/using_spaces_screen.dart';
 
 import '../../data/user.dart';
 class InfoScreen extends StatefulWidget {
@@ -183,9 +184,9 @@ class _InfoScreenState extends State<InfoScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.history, size: 30),
+                              Icon(Icons.calendar_today_outlined, size: 30),
                               SizedBox(height: 4),
-                              Text('이용내역'),
+                              Text('예약내역'),
                             ],
                           ),
                         ),
@@ -193,7 +194,7 @@ class _InfoScreenState extends State<InfoScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => UsageHistoryScreen()),
+                              MaterialPageRoute(builder: (context) => UsingSpacesScreen()),
                             );
                           },
                           borderRadius: BorderRadius.circular(12), // 터치 효과 둥글게
