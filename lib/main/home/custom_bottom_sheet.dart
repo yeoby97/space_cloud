@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // ✅ 추가
+import 'package:intl/intl.dart';
 import '../../data/warehouse.dart';
 
 class CustomBottomSheet extends StatefulWidget {
@@ -7,12 +7,14 @@ class CustomBottomSheet extends StatefulWidget {
   final VoidCallback onClose;
   final VoidCallback onTap;
   final bool isInitial;
+  final ValueNotifier<bool> isOpenNotifier;
 
   const CustomBottomSheet({
     super.key,
     required this.warehouse,
     required this.onClose,
     required this.onTap,
+    required this.isOpenNotifier,
     this.isInitial = true,
   });
 
@@ -26,11 +28,13 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
   final double _maxHeight = 700;
   double _dragStart = 0;
 
-  final NumberFormat numberFormat = NumberFormat.decimalPattern(); // ✅ 숫자 포맷
+  final NumberFormat numberFormat = NumberFormat.decimalPattern();
 
   @override
   void initState() {
     super.initState();
+
+    widget.isOpenNotifier.addListener(_handleCloseSignal);
 
     if (widget.isInitial) {
       _sheetHeight = 0;
@@ -41,6 +45,15 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
       });
     } else {
       _sheetHeight = 300;
+    }
+  }
+
+  void _handleCloseSignal() {
+    if (!widget.isOpenNotifier.value) {
+      setState(() => _sheetHeight = 0);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) widget.onClose();
+      });
     }
   }
 
@@ -62,7 +75,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
     if (_sheetHeight < 300) {
       setState(() => _sheetHeight = 0);
       Future.delayed(const Duration(milliseconds: 500), () {
-        widget.onClose();
+        if (mounted) widget.onClose();
       });
     } else {
       if (delta > 0) {
@@ -77,6 +90,12 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
         }
       }
     }
+  }
+
+  @override
+  void dispose() {
+    widget.isOpenNotifier.removeListener(_handleCloseSignal);
+    super.dispose();
   }
 
   @override
@@ -123,7 +142,6 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                   ),
                 ),
               ),
-              // 스크롤 가능한 내용
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -147,8 +165,8 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                       ),
                       Text(widget.warehouse.detailAddress),
                       const SizedBox(height: 6),
-                      Text('가격: ${numberFormat.format(widget.warehouse.price)}원'), // ✅ 쉼표 포맷
-                      Text('보관 공간: ${numberFormat.format(widget.warehouse.count)}칸'), // ✅ 쉼표 포맷
+                      Text('가격: ${numberFormat.format(widget.warehouse.price)}원'),
+                      Text('보관 공간: ${numberFormat.format(widget.warehouse.count)}칸'),
                       const SizedBox(height: 6),
                       Text('등록일: ${widget.warehouse.createdAt?.toLocal().toString().split(' ').first}'),
                       const SizedBox(height: 10),
@@ -161,7 +179,12 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.close),
-                            onPressed: widget.onClose,
+                            onPressed: () {
+                              setState(() => _sheetHeight = 0);
+                              Future.delayed(const Duration(milliseconds: 500), () {
+                                if (mounted) widget.onClose();
+                              });
+                            },
                           ),
                         ],
                       ),

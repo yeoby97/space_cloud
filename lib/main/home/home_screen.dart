@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Warehouse? _selectedWarehouse;
   bool _isSheetOpen = false;
   late GoogleMapController _mapController;
+  final ValueNotifier<bool> _isSheetOpenNotifier = ValueNotifier(true);
 
   @override
   void initState() {
@@ -30,30 +31,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void dispose() {
+    _isSheetOpenNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          _googleMap(),
-          _SearchBox(onTap: _onTap),
-          SafeArea(child: _floatingButton()),
-          if (_selectedWarehouse != null)
-            CustomBottomSheet(
-              warehouse: _selectedWarehouse!,
-              isInitial: !_isSheetOpen,
-              onClose: () {
-                setState(() {
-                  _selectedWarehouse = null;
-                  _isSheetOpen = false;
-                });
-              },
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => WarehouseDetail(warehouse: _selectedWarehouse!),
-                ));
-              },
-            ),
-        ],
+    return WillPopScope(
+      onWillPop: () async {
+        if (_selectedWarehouse != null) {
+          _isSheetOpenNotifier.value = false; // ✅ 시트 닫기 요청
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            _googleMap(),
+            _SearchBox(onTap: _onTap),
+            SafeArea(child: _floatingButton()),
+            if (_selectedWarehouse != null)
+              CustomBottomSheet(
+                warehouse: _selectedWarehouse!,
+                isOpenNotifier: _isSheetOpenNotifier,
+                onClose: () {
+                  setState(() {
+                    _selectedWarehouse = null;
+                  });
+                },
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => WarehouseDetail(warehouse: _selectedWarehouse!),
+                  ));
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
