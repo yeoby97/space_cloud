@@ -41,7 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return WillPopScope(
       onWillPop: () async {
         if (_selectedWarehouse != null) {
-          _isSheetOpenNotifier.value = false; // ✅ 시트 닫기 요청
+          _isSheetOpenNotifier.value = true;
+          await Future.delayed(const Duration(milliseconds: 1));
+          _isSheetOpenNotifier.value = false;
+
           return false;
         }
         return true;
