@@ -101,73 +101,76 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
             ),
           ],
         ),
-        child: Column(
-          children: [
-            GestureDetector(
-              onVerticalDragStart: _handleDragStart,
-              onVerticalDragUpdate: _handleDragUpdate,
-              onVerticalDragEnd: _handleDragEnd,
-              behavior: HitTestBehavior.translucent,
-              child: Container(
-                height: 36,
-                alignment: Alignment.center,
+        child: Offstage(
+          offstage: _sheetHeight == 0,
+          child: Column(
+            children: [
+              GestureDetector(
+                onVerticalDragStart: _handleDragStart,
+                onVerticalDragUpdate: _handleDragUpdate,
+                onVerticalDragEnd: _handleDragEnd,
+                behavior: HitTestBehavior.translucent,
                 child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[400],
-                    borderRadius: BorderRadius.circular(10),
+                  height: 36,
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
-            ),
-            // 스크롤 가능한 내용
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (widget.warehouse.images.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          widget.warehouse.images.first,
-                          height: 150,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+              // 스크롤 가능한 내용
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.warehouse.images.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            widget.warehouse.images.first,
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
+                      const SizedBox(height: 10),
+                      Text(
+                        widget.warehouse.address,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                    const SizedBox(height: 10),
-                    Text(
-                      widget.warehouse.address,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Text(widget.warehouse.detailAddress),
-                    const SizedBox(height: 6),
-                    Text('가격: ${numberFormat.format(widget.warehouse.price)}원'), // ✅ 쉼표 포맷
-                    Text('보관 공간: ${numberFormat.format(widget.warehouse.count)}칸'), // ✅ 쉼표 포맷
-                    const SizedBox(height: 6),
-                    Text('등록일: ${widget.warehouse.createdAt?.toLocal().toString().split(' ').first}'),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ElevatedButton(
-                          onPressed: widget.onTap,
-                          child: const Text('자세히 보기'),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: widget.onClose,
-                        ),
-                      ],
-                    ),
-                  ],
+                      Text(widget.warehouse.detailAddress),
+                      const SizedBox(height: 6),
+                      Text('가격: ${numberFormat.format(widget.warehouse.price)}원'), // ✅ 쉼표 포맷
+                      Text('보관 공간: ${numberFormat.format(widget.warehouse.count)}칸'), // ✅ 쉼표 포맷
+                      const SizedBox(height: 6),
+                      Text('등록일: ${widget.warehouse.createdAt?.toLocal().toString().split(' ').first}'),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ElevatedButton(
+                            onPressed: widget.onTap,
+                            child: const Text('자세히 보기'),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: widget.onClose,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
