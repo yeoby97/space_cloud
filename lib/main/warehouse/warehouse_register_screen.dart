@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../warehouse/my_warehouse_screen.dart';
 import '../../data/warehouse.dart';
 import '../home/search_screen.dart';
 
@@ -42,7 +44,14 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
                   Row(
                     children: [
                       _PhotoButton(onTap: _pickImage),
-                      _PhotoList(pickedImages: pickedImages),
+                      _PhotoList(
+                        pickedImages: pickedImages,
+                        onDelete: (index) {
+                          setState(() {
+                            pickedImages!.removeAt(index);
+                          });
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -190,10 +199,25 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
   }
 
   void upload() async {
+    final price = int.tryParse(priceController.text.replaceAll(',', ''));
+    final count = int.tryParse(numberController.text);
+
     if (pickedImages == null || pickedImages!.isEmpty ||
-        address == null || detailAddressController.text.trim().isEmpty) {
+        address == null ||
+        location == null ||
+        detailAddressController.text.trim().isEmpty ||
+        price == null || price <= 0 ||
+        count == null || count <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("모든 정보를 입력해주세요.")),
+        const SnackBar(content: Text("모든 정보를 올바르게 입력해주세요.")),
+      );
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("로그인이 필요합니다.")),
       );
       return;
     }
@@ -219,15 +243,16 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
         lat: location!.latitude,
         lng: location!.longitude,
         images: imageUrls,
-        price: int.tryParse(priceController.text.replaceAll(',', '')) ?? 1000000,
-        count: int.tryParse(numberController.text) ?? 0,
-        createdAt: null,
+        price: price,
+        count: count,
+        createdAt: DateTime.now(),
+        ownerId: user.uid,
       );
 
       await FirebaseFirestore.instance.collection('warehouse').add(warehouse.toMap());
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("등록 완료!")),
-      );
+
+      if (!mounted) return;
+
       Navigator.of(context).pop();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -271,8 +296,13 @@ class _PhotoButton extends StatelessWidget {
 
 class _PhotoList extends StatelessWidget {
   final List<XFile>? pickedImages;
+  final void Function(int index) onDelete;
 
-  const _PhotoList({super.key, required this.pickedImages});
+  const _PhotoList({
+    super.key,
+    required this.pickedImages,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -280,19 +310,47 @@ class _PhotoList extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: pickedImages?.map(
-                (image) => Container(
-              margin: const EdgeInsets.only(left: 8),
-              height: 60,
-              width: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(
-                  image: FileImage(File(image.path)),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
+          children: pickedImages?.asMap().entries.map(
+                (entry) {
+              final index = entry.key;
+              final image = entry.value;
+
+              return Stack(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    height: 60,
+                    width: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      image: DecorationImage(
+                        image: FileImage(File(image.path)),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: GestureDetector(
+                      onTap: () => onDelete(index),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ).toList() ?? [],
         ),
       ),

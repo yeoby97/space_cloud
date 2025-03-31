@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Warehouse {
-  final String id; // Firestore에 저장할 땐 제외해도 됨
+  final String id; // Firestore 문서 ID
   final String address;
   final String detailAddress;
   final int count;
@@ -10,6 +10,7 @@ class Warehouse {
   final double lat;
   final double lng;
   final int price;
+  final String ownerId;
 
   Warehouse({
     this.id = '',
@@ -21,6 +22,7 @@ class Warehouse {
     required this.lat,
     required this.lng,
     required this.price,
+    required this.ownerId,
   });
 
   factory Warehouse.fromDoc(DocumentSnapshot doc) {
@@ -36,6 +38,7 @@ class Warehouse {
       lat: (data['lat'] as num).toDouble(),
       lng: (data['lng'] as num).toDouble(),
       price: data['price'] ?? 0,
+      ownerId: data['ownerId'] ?? '',
     );
   }
 
@@ -44,11 +47,12 @@ class Warehouse {
       'address': address,
       'detailAddress': detailAddress,
       'count': count,
-      'createdAt': FieldValue.serverTimestamp(), // 서버 타임스탬프 직접 지정
+      'createdAt': FieldValue.serverTimestamp(),
       'images': images,
       'lat': lat,
       'lng': lng,
       'price': price,
+      'ownerId': ownerId,
     };
   }
 }

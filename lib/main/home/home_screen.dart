@@ -11,7 +11,8 @@ import 'custom_bottom_sheet.dart';
 import 'my_location_view_model.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ValueNotifier<bool> isBottomSheetOpenNotifier;
+  const HomeScreen({super.key, required this.isBottomSheetOpenNotifier});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -20,9 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final List<Marker> _markers = [];
   Warehouse? _selectedWarehouse;
-  bool _isSheetOpen = false;
   late GoogleMapController _mapController;
-  final ValueNotifier<bool> _isSheetOpenNotifier = ValueNotifier(true);
 
   @override
   void initState() {
@@ -31,47 +30,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() {
-    _isSheetOpenNotifier.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_selectedWarehouse != null) {
-          _isSheetOpenNotifier.value = true;
-          await Future.delayed(const Duration(milliseconds: 1));
-          _isSheetOpenNotifier.value = false;
-
-          return false;
-        }
-        return true;
-      },
-      child: Scaffold(
-        body: Stack(
-          children: [
-            _googleMap(),
-            _SearchBox(onTap: _onTap),
-            SafeArea(child: _floatingButton()),
-            if (_selectedWarehouse != null)
-              CustomBottomSheet(
-                warehouse: _selectedWarehouse!,
-                isOpenNotifier: _isSheetOpenNotifier,
-                onClose: () {
-                  setState(() {
-                    _selectedWarehouse = null;
-                  });
-                },
-                onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => WarehouseDetail(warehouse: _selectedWarehouse!),
-                  ));
-                },
-              ),
-          ],
-        ),
+    return Scaffold(
+      body: Stack(
+        children: [
+          _googleMap(),
+          _SearchBox(onTap: _onTap),
+          SafeArea(child: _floatingButton()),
+          if (_selectedWarehouse != null)
+            CustomBottomSheet(
+              warehouse: _selectedWarehouse!,
+              isOpenNotifier: widget.isBottomSheetOpenNotifier,
+              onClose: () {
+                widget.isBottomSheetOpenNotifier.value = false;
+                setState(() {
+                  _selectedWarehouse = null;
+                });
+              },
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => WarehouseDetail(warehouse: _selectedWarehouse!),
+                ));
+              },
+            ),
+        ],
       ),
     );
   }
@@ -135,11 +117,11 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const SearchScreen()),
     );
 
-    if (result?["location"] != null) {
+    if (result?['location'] != null) {
       _mapController.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
           bearing: 0,
-          target: result["location"],
+          target: result['location'],
           zoom: 16.0,
         ),
       ));
@@ -161,8 +143,8 @@ class _HomeScreenState extends State<HomeScreen> {
         infoWindow: InfoWindow(title: warehouse.address),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         onTap: () {
+          widget.isBottomSheetOpenNotifier.value = true;
           setState(() {
-            _isSheetOpen = _selectedWarehouse != null;
             _selectedWarehouse = warehouse;
           });
         },
@@ -179,10 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _SearchBox extends StatelessWidget {
   final VoidCallback onTap;
-  const _SearchBox({
-    super.key,
-    required this.onTap,
-  });
+  const _SearchBox({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +182,7 @@ class _SearchBox extends StatelessWidget {
                     color: Colors.black.withOpacity(0.2),
                     blurRadius: 10,
                     spreadRadius: 2,
-                    offset: Offset(3, 3),
+                    offset: const Offset(3, 3),
                   ),
                 ],
                 borderRadius: BorderRadius.circular(10.0),
@@ -213,7 +192,7 @@ class _SearchBox extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.map),
+                    const Icon(Icons.map),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -226,7 +205,7 @@ class _SearchBox extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Icon(Icons.search),
+                    const Icon(Icons.search),
                   ],
                 ),
               ),
