@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../data/warehouse.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../data/warehouse.dart';
+import 'reservation_screen.dart';
 
 class CustomBottomSheet extends StatefulWidget {
   final Warehouse warehouse;
@@ -29,11 +32,11 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
   double _dragStart = 0;
 
   final NumberFormat numberFormat = NumberFormat.decimalPattern();
+  Map<String, String> spaceIdToDocId = {}; // ✅ spaceId → docId 매핑 저장
 
   @override
   void initState() {
     super.initState();
-
     widget.isOpenNotifier.addListener(_handleCloseSignal);
 
     if (widget.isInitial) {
@@ -46,6 +49,27 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
     } else {
       _sheetHeight = 300;
     }
+
+    _loadSpaces(); // ✅ 공간 문서 로드
+  }
+
+  Future<void> _loadSpaces() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('warehouse')
+        .doc(widget.warehouse.id)
+        .collection('spaces')
+        .get();
+
+    final mapping = <String, String>{};
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final spaceId = data['spaceId'] ?? '';
+      mapping[spaceId] = doc.id;
+    }
+
+    setState(() {
+      spaceIdToDocId = mapping;
+    });
   }
 
   void _handleCloseSignal() {
@@ -159,10 +183,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                           ),
                         ),
                       const SizedBox(height: 10),
-                      Text(
-                        widget.warehouse.address,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
+                      Text(widget.warehouse.address, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       Text(widget.warehouse.detailAddress),
                       const SizedBox(height: 6),
                       Text('가격: ${numberFormat.format(widget.warehouse.price)}원'),
@@ -188,6 +209,10 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      const Text("예약 가능한 공간", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 8),
+                      _buildSpaceGrid(widget.warehouse),
                     ],
                   ),
                 ),
@@ -196,6 +221,67 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSpaceGrid(Warehouse warehouse) {
+    final rows = warehouse.layout['rows'] ?? 0;
+    final cols = warehouse.layout['columns'] ?? 0;
+
+    if (rows <= 0 || cols <= 0) return const Text('잘못된 배치 정보입니다.');
+
+    return Column(
+      children: List.generate(rows, (r) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(cols, (c) {
+            final spaceId = '${String.fromCharCode(65 + r)}${c + 1}';
+            final spaceDocId = spaceIdToDocId[spaceId];
+
+            return GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: Text('$spaceId 예약'),
+                    content: const Text('이 공간을 예약하시겠습니까?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          if (spaceDocId != null) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ReservationScreen(
+                                  warehouseId: warehouse.id,
+                                  spaceDocId: spaceDocId,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('예약'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.all(4),
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.green[100],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(spaceId, style: const TextStyle(fontSize: 10)),
+              ),
+            );
+          }),
+        );
+      }),
     );
   }
 }

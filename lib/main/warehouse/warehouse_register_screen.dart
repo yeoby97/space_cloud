@@ -310,6 +310,7 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
         imageUrls.add(downloadUrl);
       }
 
+      // 창고 정보 생성
       final warehouse = Warehouse(
         address: address!,
         detailAddress: detailAddressController.text.trim(),
@@ -321,12 +322,29 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
         createdAt: DateTime.now(),
         ownerId: user.uid,
         layout: {
-          'rows': int.parse(rowController.text),
-          'columns': int.parse(colController.text),
+          'rows': rows,
+          'columns': columns,
         },
       );
 
-      await FirebaseFirestore.instance.collection('warehouse').add(warehouse.toMap());
+      // 창고 문서 저장
+      final docRef = await FirebaseFirestore.instance
+          .collection('warehouse')
+          .add(warehouse.toMap());
+
+      // 공간 정보 저장
+      for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < columns; c++) {
+          final spaceId = '${String.fromCharCode(65 + r)}${c + 1}'; // A1, A2, ...
+          await docRef.collection('spaces').add({
+            'spaceId': spaceId,
+            'isReserved': false,
+            'reservedBy': null,
+            'startDate': null,
+            'endDate': null,
+          });
+        }
+      }
 
       if (!mounted) return;
 
