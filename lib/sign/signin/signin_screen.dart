@@ -26,7 +26,7 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           ),
         )
-        : MainScreen(user: _user);
+        : MainScreen();
   }
 
   Future<void> _signInWithGoogle() async {
