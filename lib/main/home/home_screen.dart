@@ -7,8 +7,8 @@ import 'package:space_cloud/main/home/search_screen.dart';
 
 import '../../data/warehouse.dart';
 import '../warehouse/warehouse_detail.dart';
-import 'custom_bottom_sheet.dart';
-import 'my_location_view_model.dart';
+import 'bottom_sheet/custom_bottom_sheet.dart';
+import 'my_location/my_location_view_model.dart';
 
 class HomeScreen extends StatefulWidget {
   final ValueNotifier<bool> isBottomSheetOpenNotifier;

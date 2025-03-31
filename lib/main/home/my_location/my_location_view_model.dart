@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:space_cloud/main/home/my_location.dart';
+import 'package:space_cloud/main/home/my_location/my_location.dart';
 
 class MyLocationViewModel extends ChangeNotifier {
   final MyLocation _myLocation = MyLocation();
