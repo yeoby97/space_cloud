@@ -8,7 +8,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-import '../warehouse/my_warehouse_screen.dart';
 import '../../data/warehouse.dart';
 import '../home/search_screen.dart';
 
@@ -28,6 +27,8 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
   final priceController = TextEditingController();
   final numberController = TextEditingController();
   final _priceFormat = NumberFormat("#,###", "en_US");
+  final rowController = TextEditingController();
+  final colController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -37,59 +38,77 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 30),
-                  Row(
-                    children: [
-                      _PhotoButton(onTap: _pickImage),
-                      _PhotoList(
-                        pickedImages: pickedImages,
-                        onDelete: (index) {
-                          setState(() {
-                            pickedImages!.removeAt(index);
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: selectLocation,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        address ?? '주소',
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: address == null ? Colors.grey : Colors.black,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 30),
+                    Row(
+                      children: [
+                        _PhotoButton(onTap: _pickImage),
+                        _PhotoList(
+                          pickedImages: pickedImages,
+                          onDelete: (index) {
+                            setState(() {
+                              pickedImages!.removeAt(index);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: selectLocation,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          address ?? '주소',
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: address == null ? Colors.grey : Colors.black,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(detailAddressController, '상세 주소'),
-                  const SizedBox(height: 12),
-                  _buildNumberField(priceController, '월 대여료', '₩', _priceFormat),
-                  const SizedBox(height: 12),
-                  _buildNumberField(numberController, '창고 갯수', '개'),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FloatingActionButton.extended(
-                      onPressed: upload,
-                      label: const Text("등록", style: TextStyle(fontSize: 16)),
-                      icon: const Icon(Icons.check),
+                    const SizedBox(height: 12),
+                    _buildTextField(detailAddressController, '상세 주소'),
+                    const SizedBox(height: 12),
+                    _buildNumberField(priceController, '월 대여료', '₩', _priceFormat),
+                    const SizedBox(height: 12),
+                    _buildNumberField(numberController, '창고 갯수', '개'),
+                    const SizedBox(height: 12),
+
+                    // ✅ 행/열 입력 필드
+                    Row(
+                      children: [
+                        Expanded(child: _buildNumberField(rowController, '행', '')),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildNumberField(colController, '열', '')),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+
+                    // ✅ 미리보기 UI
+                    if (int.tryParse(rowController.text) != null && int.tryParse(colController.text) != null)
+                      _buildMatrixPreview(),
+
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FloatingActionButton.extended(
+                        onPressed: upload,
+                        label: const Text("등록", style: TextStyle(fontSize: 16)),
+                        icon: const Icon(Icons.check),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -110,6 +129,55 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
         ],
       ),
     );
+  }
+
+// ✅ 미리보기 UI 위젯
+  Widget _buildMatrixPreview() {
+    final row = int.tryParse(rowController.text);
+    final col = int.tryParse(colController.text);
+
+    if (row == null || col == null || row <= 0 || col <= 0) return const SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("배치 미리보기", style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: List.generate(row, (r) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(col, (c) {
+                  return Container(
+                    margin: const EdgeInsets.all(4),
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  );
+                }),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    rowController.addListener(() => setState(() {}));
+    colController.addListener(() => setState(() {}));
   }
 
   Widget _buildTextField(TextEditingController controller, String hint) {
@@ -201,13 +269,18 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
   void upload() async {
     final price = int.tryParse(priceController.text.replaceAll(',', ''));
     final count = int.tryParse(numberController.text);
+    final rows = int.tryParse(rowController.text);
+    final columns = int.tryParse(colController.text);
 
     if (pickedImages == null || pickedImages!.isEmpty ||
         address == null ||
         location == null ||
         detailAddressController.text.trim().isEmpty ||
         price == null || price <= 0 ||
-        count == null || count <= 0) {
+        count == null || count <= 0 ||
+        rows == null || rows <= 0 ||
+        columns == null || columns <= 0 ||
+        rows * columns != count) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("모든 정보를 올바르게 입력해주세요.")),
       );
@@ -247,6 +320,10 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
         count: count,
         createdAt: DateTime.now(),
         ownerId: user.uid,
+        layout: {
+          'rows': int.parse(rowController.text),
+          'columns': int.parse(colController.text),
+        },
       );
 
       await FirebaseFirestore.instance.collection('warehouse').add(warehouse.toMap());

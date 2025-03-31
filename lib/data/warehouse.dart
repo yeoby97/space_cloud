@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Warehouse {
-  final String id; // Firestore 문서 ID
+  final String id;
   final String address;
   final String detailAddress;
   final int count;
@@ -11,6 +11,7 @@ class Warehouse {
   final double lng;
   final int price;
   final String ownerId;
+  final Map<String, dynamic> layout;
 
   Warehouse({
     this.id = '',
@@ -23,6 +24,7 @@ class Warehouse {
     required this.lng,
     required this.price,
     required this.ownerId,
+    required this.layout,
   });
 
   factory Warehouse.fromDoc(DocumentSnapshot doc) {
@@ -39,6 +41,7 @@ class Warehouse {
       lng: (data['lng'] as num).toDouble(),
       price: data['price'] ?? 0,
       ownerId: data['ownerId'] ?? '',
+      layout: Map<String, dynamic>.from(data['layout'] ?? {}),
     );
   }
 
@@ -53,6 +56,7 @@ class Warehouse {
       'lng': lng,
       'price': price,
       'ownerId': ownerId,
+      'layout': layout,
     };
   }
 }
