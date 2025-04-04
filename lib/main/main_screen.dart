@@ -9,6 +9,7 @@ import 'package:space_cloud/main/info/info_screen.dart';
 import 'package:space_cloud/main/home/home_screen.dart';
 import 'package:space_cloud/main/list/list_screen.dart';
 
+import '../sign/signin/signin_screen.dart';
 import 'home/my_location/my_location_view_model.dart';
 
 class MainScreen extends StatefulWidget {
@@ -25,7 +26,7 @@ class _MainScreenState extends State<MainScreen> {
   DateTime? _lastBackPressed;
   late Location _location;
   final ValueNotifier<bool> _isBottomSheetOpen = ValueNotifier(false);
-
+  User? user = FirebaseAuth.instance.currentUser;
   late final List<Widget> _bodies;
 
   @override
@@ -37,7 +38,7 @@ class _MainScreenState extends State<MainScreen> {
     _bodies = [
       HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
       const MyWarehouseScreen(),
-      const ListScreen(),
+      ListScreen(),
       const InfoScreen(),
     ];
   }
@@ -100,6 +101,11 @@ class _MainScreenState extends State<MainScreen> {
                 label: '내 정보',
                 onTap: () => _setTab(3),
               ),
+              SpeedDialChild(
+                child: const Icon(Icons.logout),
+                label: '로그아웃',
+                onTap: () => _setTab(4),
+              ),
             ],
           ),
         ),
@@ -107,11 +113,34 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _setTab(int index) {
-    if (_currentIndex != index) {
-      setState(() {
-        _currentIndex = index;
-      });
+  void _setTab(int index) async{
+    if(index != 0 && index != 4 && user == null) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SignInScreen()),
+      );
+      if(result == true){
+        user = FirebaseAuth.instance.currentUser;
+        if (_currentIndex != index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        }
+      }
+    } else {
+      if (_currentIndex != index) {
+        if(index == 4){
+          await FirebaseAuth.instance.signOut();
+          user = null;
+          setState(() {
+            _currentIndex = 0;
+          });
+        } else {
+          setState(() {
+            _currentIndex = index;
+          });
+        }
+      }
     }
   }
 
@@ -121,7 +150,6 @@ class _MainScreenState extends State<MainScreen> {
       serviceEnabled = await _location.requestService();
       if (!serviceEnabled) return;
     }
-
     PermissionStatus permissionGranted = await _location.hasPermission();
     if (permissionGranted == PermissionStatus.denied) {
       permissionGranted = await _location.requestPermission();

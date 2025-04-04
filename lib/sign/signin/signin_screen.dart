@@ -67,6 +67,7 @@ class _SignInScreenState extends State<SignInScreen> {
           await docRef.set(newUser.toMap());
           debugPrint('Firestore에 사용자 정보 저장 완료');
         }
+        Navigator.pop(context, true);
         setState(() {
           _user = userCredential.user;
         });

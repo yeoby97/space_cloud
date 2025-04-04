@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +6,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:space_cloud/main/info/usage_history_screen.dart';
 import 'package:space_cloud/main/info/using_spaces_screen.dart';
-
 import '../../data/user.dart';
+
+
 class InfoScreen extends StatefulWidget {
   const InfoScreen({super.key});
 
@@ -18,13 +18,12 @@ class InfoScreen extends StatefulWidget {
 
 class _InfoScreenState extends State<InfoScreen> {
 
-  late User user;
+  User user = FirebaseAuth.instance.currentUser!;
   AppUser? appUser;
 
   @override
   void initState() {
     super.initState();
-    user = FirebaseAuth.instance.currentUser!;
     _loadUserData(); // 비동기 로직은 따로 처리
   }
 
@@ -173,23 +172,7 @@ class _InfoScreenState extends State<InfoScreen> {
                       spacing: 30,
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => UsageHistoryScreen()),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(12), // 터치 효과 둥글게
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.calendar_today_outlined, size: 30),
-                              SizedBox(height: 4),
-                              Text('예약내역'),
-                            ],
-                          ),
-                        ),
+
                         InkWell(
                           onTap: () {
                             Navigator.push(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:space_cloud/main/main_screen.dart';
 import 'package:space_cloud/sign/signin/signin_screen.dart';
 import 'firebase/firebase_options.dart';
 
@@ -16,7 +17,7 @@ void main() async {
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: SignInScreen(),
+      home: MainScreen(),
     ),
   );
 }
