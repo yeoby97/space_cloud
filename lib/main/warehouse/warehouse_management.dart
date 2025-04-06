@@ -364,7 +364,7 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
                                         ),
                                       ),
                                     SizedBox(width: 20,),
-                                    if (reservations.length > 1)  // 사용 중인 예약 빼고 대기 예약이 있다면
+                                    if (reservations.length > 0)  // 사용 중인 예약 빼고 대기 예약이 있다면
                                       OutlinedButton.icon(
                                         onPressed: () => _showReservationDialog(spaceId, reservations),
                                         icon: const Icon(Icons.event_note, size: 16),
