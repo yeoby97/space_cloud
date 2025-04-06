@@ -1,19 +1,19 @@
 class AppUser {
-  final String uid;
-  final String email;
-  final String displayName;
-  final String? photoURL;
-  final String phoneNumber;
+  final String uid; // 유저 아이디 null x
+  final String email; // 유저 이메일 null x
+  final String displayName; // 유저 이름 null x
+  final String photoURL; // 프로필 UrL null x -  프로필 없더라도 기본 이미지 Url 넣어줌
+  final String phoneNumber; // 휴대폰번호
 
   AppUser({
     required this.uid,
     required this.phoneNumber,
     required this.email,
     required this.displayName,
-    this.photoURL,
+    required this.photoURL,
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap() { // 클래스를 맵으로 변환(json형식)
     return {
       'uid': uid,
       'email': email,

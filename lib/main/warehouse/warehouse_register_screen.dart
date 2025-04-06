@@ -45,7 +45,10 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
                     const SizedBox(height: 30),
                     Row(
                       children: [
-                        _PhotoButton(onTap: _pickImage),
+                        _PhotoButton(
+                          onTap: _pickImage,
+                          pickedCount: pickedImages?.length ?? 0,
+                        ),
                         _PhotoList(
                           pickedImages: pickedImages,
                           onDelete: (index) {
@@ -248,12 +251,18 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    pickedImages = await picker.pickMultiImage();
+    final newImages = await picker.pickMultiImage();
 
-    if (pickedImages != null && pickedImages!.length > 10) {
-      pickedImages = pickedImages!.sublist(0, 10);
+    if (newImages != null && newImages.isNotEmpty) {
+      setState(() {
+        pickedImages = (pickedImages ?? []) + newImages;
+
+        // 10장 넘으면 앞에서부터 자르기 (뒤에 선택한 게 우선이므로 뒤에서부터 남겨둠)
+        if (pickedImages!.length > 10) {
+          pickedImages = pickedImages!.sublist(0, 10);
+        }
+      });
     }
-    setState(() {});
   }
 
   void selectLocation() async {
@@ -357,8 +366,13 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
 
 class _PhotoButton extends StatelessWidget {
   final VoidCallback onTap;
+  final int pickedCount;
 
-  const _PhotoButton({super.key, required this.onTap});
+  const _PhotoButton({
+    super.key,
+    required this.onTap,
+    required this.pickedCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -372,12 +386,12 @@ class _PhotoButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.grey),
         ),
-        child: const Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.camera_alt_outlined, size: 28),
-            SizedBox(height: 4),
-            Text('0/10', style: TextStyle(fontSize: 12)),
+            const Icon(Icons.camera_alt_outlined, size: 28),
+            const SizedBox(height: 4),
+            Text('${pickedCount}/10', style: const TextStyle(fontSize: 12)),
           ],
         ),
       ),

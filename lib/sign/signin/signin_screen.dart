@@ -53,7 +53,7 @@ class _SignInScreenState extends State<SignInScreen> {
           uid: firebaseUser.uid,
           email: firebaseUser.email!,
           displayName: firebaseUser.displayName!,
-          photoURL: firebaseUser.photoURL,
+          photoURL: firebaseUser.photoURL!,
           phoneNumber: firebaseUser.phoneNumber ?? '01012345678', // null 방지
         );
         final docRef = FirebaseFirestore.instance
