@@ -386,7 +386,6 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
                       );
                     }),
                   );
-
                 },
               ),
             ],
