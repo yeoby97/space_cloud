@@ -1,18 +1,30 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import 'package:space_cloud/main/warehouse/warehouse_register_screen.dart';
 import '../../data/warehouse.dart';
 import '../warehouse/warehouse_management.dart';
+import '../warehouse/warehouse_register_screen.dart';
+import 'my_warehouse_view_model.dart';
 
 class MyWarehouseScreen extends StatelessWidget {
   const MyWarehouseScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    return ChangeNotifierProvider(
+      create: (_) => MyWarehouseViewModel(),
+      child: const _MyWarehouseBody(),
+    );
+  }
+}
+
+class _MyWarehouseBody extends StatelessWidget {
+  const _MyWarehouseBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<MyWarehouseViewModel>();
     final formatter = NumberFormat('#,###');
 
     return Scaffold(
@@ -32,25 +44,17 @@ class MyWarehouseScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: user == null
-          ? const Center(child: Text('로그인이 필요합니다.'))
-          : StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('warehouse')
-            .where('ownerId', isEqualTo: user.uid)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Builder(
+        builder: (_) {
+          if (viewModel.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('에러 발생: ${snapshot.error}'));
+          if (viewModel.error != null) {
+            return Center(child: Text(viewModel.error!));
           }
 
-          final docs = snapshot.data?.docs ?? [];
-
-          final warehouses = docs.map((doc) => Warehouse.fromDoc(doc)).toList();
+          final warehouses = viewModel.warehouses;
 
           if (warehouses.isEmpty) {
             return const Center(child: Text('등록된 창고가 없습니다.'));
