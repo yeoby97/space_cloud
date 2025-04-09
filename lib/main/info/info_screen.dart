@@ -7,10 +7,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:space_cloud/main/info/using_spaces_screen.dart';
 import 'package:space_cloud/main/list/list_screen.dart';
+import 'package:space_cloud/main/warehouse/my_warehouse_screen.dart';
 import 'package:space_cloud/sign/signout/signout_screen.dart';
 
 import '../../data/user.dart';
 import '../../sign/signin/signin_screen.dart';
+import '../home/home_screen.dart';
+import '../main_screen.dart';
 
 class InfoScreen extends StatefulWidget {
   const InfoScreen({super.key});
@@ -197,12 +200,10 @@ class _InfoScreenState extends State<InfoScreen> {
         children: [
           _buildFavorite(),
           _buildRecentlyView(),
-          _buildReservationStatus(),
           const Divider(
             indent: 20,
             endIndent: 20,
           ),
-          _buildMyWarehouse(),
           const Spacer(),
           _buildSignOut(),
         ],
@@ -213,23 +214,26 @@ class _InfoScreenState extends State<InfoScreen> {
   Widget _buildFavorite() {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Container(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '찜한 창고',
-              style: TextStyle(
-                fontSize: 20,
+      child: GestureDetector(
+        onTap: () {
+          print("찜한 창고 클릭됨");
+        },
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.transparent,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
+                '찜한 창고',
+                style: TextStyle(fontSize: 20),
               ),
-            ),
-            GestureDetector(
-              onTap: () {},
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-              ),
-            ),
-          ],
+              Icon(Icons.arrow_forward_ios_rounded),
+            ],
+          ),
         ),
       ),
     );
@@ -238,79 +242,26 @@ class _InfoScreenState extends State<InfoScreen> {
   Widget _buildRecentlyView() {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Container(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '최근 본 창고',
-              style: TextStyle(
-                fontSize: 20,
+      child: GestureDetector(
+        onTap: () {
+          print("최근 본 창고 클릭됨");
+        },
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.transparent,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
+                '최근 본 창고',
+                style: TextStyle(fontSize: 20),
               ),
-            ),
-            GestureDetector(
-              onTap: () {},
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReservationStatus() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Container(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '예약 현황',
-              style: TextStyle(
-                fontSize: 20,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => ListScreen()
-                  ),
-                );
-              },
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMyWarehouse() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Container(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '내 창고',
-              style: TextStyle(
-                fontSize: 20,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {},
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-              ),
-            ),
-          ],
+              Icon(Icons.arrow_forward_ios_rounded),
+            ],
+          ),
         ),
       ),
     );
@@ -434,5 +385,19 @@ class _InfoScreenState extends State<InfoScreen> {
       return '${phone.substring(0, 3)}-${phone.substring(3, 6)}-${phone.substring(6)}';
     }
     return phone;
+  }
+
+  void pushAfterClearingToHome(BuildContext context, Widget screen) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => MainScreen(),
+      ),
+    );
+
+    Future.delayed(Duration.zero, () {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => screen),
+      );
+    });
   }
 }
