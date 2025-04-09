@@ -30,20 +30,6 @@ class _MainScreenState extends State<MainScreen> {
   late final List<Widget> _bodies;
 
   @override
-  void initState() {
-    super.initState();
-    _location = Location();
-    sendPermission();
-
-    _bodies = [
-      HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
-      const MyWarehouseScreen(),
-      ListScreen(),
-      const InfoScreen(),
-    ];
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => MyLocationViewModel(),
@@ -101,11 +87,6 @@ class _MainScreenState extends State<MainScreen> {
                 label: '내 정보',
                 onTap: () => _setTab(3),
               ),
-              SpeedDialChild(
-                child: const Icon(Icons.logout),
-                label: '로그아웃',
-                onTap: () => _setTab(4),
-              ),
             ],
           ),
         ),
@@ -113,35 +94,24 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _location = Location();
+    sendPermission();
+
+    _bodies = [
+      HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
+      const MyWarehouseScreen(),
+      ListScreen(),
+      const InfoScreen(),
+    ];
+  }
+
   void _setTab(int index) async{
-    if(index != 0 && index != 4 && user == null) {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => SignInScreen()),
-      );
-      if(result == true){
-        user = FirebaseAuth.instance.currentUser;
-        if (_currentIndex != index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        }
-      }
-    } else {
-      if (_currentIndex != index) {
-        if(index == 4){
-          await FirebaseAuth.instance.signOut();
-          user = null;
-          setState(() {
-            _currentIndex = 0;
-          });
-        } else {
-          setState(() {
-            _currentIndex = index;
-          });
-        }
-      }
-    }
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   Future<void> sendPermission() async {

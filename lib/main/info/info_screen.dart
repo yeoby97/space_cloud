@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:space_cloud/main/info/using_spaces_screen.dart';
+import 'package:space_cloud/main/list/list_screen.dart';
+import 'package:space_cloud/sign/signout/signout_screen.dart';
 
 import '../../data/user.dart';
+import '../../sign/signin/signin_screen.dart';
 
 class InfoScreen extends StatefulWidget {
   const InfoScreen({super.key});
@@ -17,38 +20,37 @@ class InfoScreen extends StatefulWidget {
 }
 
 class _InfoScreenState extends State<InfoScreen> {
-  final User user = FirebaseAuth.instance.currentUser!; // 파이어베이스 로그인 확인
-  AppUser? appUser; // 유저 클래스 - 커스텀 유저 정보
+  User? user = FirebaseAuth.instance.currentUser;
+  AppUser? appUser;
 
   @override
-  void initState() {  // 초기화 시에 유저데이터부터 가져옴
+  void initState() {
     super.initState();
-    _loadUserData();  // 데이터 가져오기
+    if (user != null) {
+      _loadUserData();
+    }
   }
 
   Future<void> _loadUserData() async {
-    // Firestore의 users collection 에서 user.uid이름을 가진 document 불러옴
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    if (doc.exists) { // 해당 문서가 존재하면
-      setState(() {   // 화면 초기화
-        appUser = AppUser.fromMap(doc.data()!); // 엡 유저는 doc.data를 AppUser로 변환해주는 factory 생성자
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+    if (!mounted) return;
+    if (doc.exists) {
+      setState(() {
+        appUser = AppUser.fromMap(doc.data()!);
       });
     }
   }
 
   @override
-  Widget build(BuildContext context) {  // 현제 페이지의 가장 상위 위젯 - 해당 위젯에 모든 화면 요소 담겨있음
-    return appUser == null  // 유저가 null이라면 유저 정보를 불러오는 중이기 떄문에 로딩화면
-        ? const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    )
-        : Scaffold(   // 유저 데이터를 불러왔다면
-      body: SafeArea( // 시스템바 침범 x
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
         child: Column(
           children: [
-            _buildProfileSection(),   // 프로필 섹션 - 프로필, 이름, 이메일
+            _buildTitle(),
+            _buildProfileSection(),
             const SizedBox(height: 10),
-            _buildPhoneSection(),
+            if (appUser != null) _buildPhoneSection(), // user != null일 땐 appUser도 체크
             const SizedBox(height: 10),
             _buildMenuSection(),
           ],
@@ -57,63 +59,88 @@ class _InfoScreenState extends State<InfoScreen> {
     );
   }
 
-  Widget _buildProfileSection() {   // 프로필 섹션 - 프로필, 이름, 이메일
-    return Padding(   // 패딩
-      padding: const EdgeInsets.all(20),
-      child: Container(   // 박스 위젯
-        padding: const EdgeInsets.all(10),
-        width: double.infinity,   // 너비 폰 화면 꽉차게
-        height: 100,    // 높이
-        decoration: BoxDecoration(   // 위젯 decoration
-          borderRadius: BorderRadius.circular(20),  // border 20만큼 원형으로
-          color: Colors.grey.withAlpha(50), // 50투명도 가진 grey
+  Widget _buildTitle() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 0, 0),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: Text(
+          '마이페이지',
+          style: TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        child: Row(   // 프로필   이름,이메일
+      ),
+    );
+  }
+
+  Widget _buildProfileSection() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        width: double.infinity,
+        height: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.grey.withAlpha(50),
+        ),
+        child: Row(
           children: [
-            Stack(    // 여러 위젯을 겹칠 수 있도록 하는 위젯
-              children: [
-                ClipRRect(    // 사각형 위젯에 원형테두리를 주는 위젯
-                  borderRadius: BorderRadius.circular(15),  // 15만큼 원형
-                  child: Image.network(   // Uri로 이미지 띄어주는 위젯
-                    appUser?.photoURL ?? '',
-                    width: 70,
-                    height: 70,
-                    fit: BoxFit.cover, // 이미지가 비율을 유지하며 위젯을 완전히 덮음 - 사진 일부 잘릴 수 있음
-                    errorBuilder: (context, error, stackTrace) {  // 에러시 반환해줄 위젯
-                      return Container(
-                        width: 70,
-                        height: 70,
-                        color: Colors.grey,
-                        child: const Icon(Icons.person, size: 40),
-                      );
-                    },
-                  ),
+            CircleAvatar(
+              radius: 35,
+              backgroundColor: Colors.grey[300],
+              child: appUser?.photoURL == null || appUser!.photoURL.isEmpty
+                  ? const Icon(Icons.person, size: 40, color: Colors.grey,)
+                  : ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.network(
+                  appUser!.photoURL,
+                  width: 70,
+                  height: 70,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.person),
                 ),
-                Positioned(  // 위젯을 특정 위치에 배치하는 위젯 / 부모 내부에서
-                  bottom: 0,  // 바닥
-                  right: 0,   // 오른쪾
-                  child: GestureDetector(   // 하위 위젯에 터치 등 event를 부여해주는 위젯
-                    onTap: () => _showProfileOptions(context), // 클릭시 프로필 옵션 위젯이 뜨게 해준다.
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(5),
-                      child: const Icon(Icons.edit, size: 16, color: Colors.black54),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(width: 20),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(user.displayName ?? '이름 없음'),
-                Text(user.email ?? '이메일 없음'),
-              ],
+            Expanded(
+              child: user == null
+                  ? GestureDetector(
+                onTap: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SignInScreen(),
+                    ),
+                  );
+                  if (result == true) {
+                    user = FirebaseAuth.instance.currentUser;
+                    await _loadUserData();
+                    if (mounted) setState(() {});
+                  }
+                },
+                child: Row(
+                  children: const [
+                    Text(
+                      '로그인 & 가입하기',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue),
+                    ),
+                    Icon(Icons.chevron_right, color: Colors.blue),
+                  ],
+                ),
+              )
+                  : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(user!.displayName ?? '이름 없음'),
+                  Text(user!.email ?? '이메일 없음'),
+                ],
+              ),
             ),
           ],
         ),
@@ -142,14 +169,15 @@ class _InfoScreenState extends State<InfoScreen> {
             ),
             ElevatedButton.icon(
               onPressed: () {
-                // TODO: 전화번호 수정 기능
+                // TODO: 전화번호 수정
               },
               icon: const Icon(Icons.edit, size: 16),
               label: const Text('수정', style: TextStyle(fontSize: 14)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -164,39 +192,42 @@ class _InfoScreenState extends State<InfoScreen> {
   }
 
   Widget _buildMenuSection() {
+    return Expanded(
+      child: Column(
+        children: [
+          _buildFavorite(),
+          _buildRecentlyView(),
+          _buildReservationStatus(),
+          const Divider(
+            indent: 20,
+            endIndent: 20,
+          ),
+          _buildMyWarehouse(),
+          const Spacer(),
+          _buildSignOut(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFavorite() {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Container(
-        padding: const EdgeInsets.all(10),
-        width: double.infinity,
-        height: 200,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Colors.grey.withAlpha(50),
-        ),
-        child: Column(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const UsingSpacesScreen()),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.warehouse_outlined, size: 30),
-                      SizedBox(height: 4),
-                      Text('이용중'),
-                    ],
-                  ),
-                ),
-              ],
+            Text(
+              '찜한 창고',
+              style: TextStyle(
+                fontSize: 20,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {},
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+              ),
             ),
           ],
         ),
@@ -204,7 +235,111 @@ class _InfoScreenState extends State<InfoScreen> {
     );
   }
 
+  Widget _buildRecentlyView() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Container(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '최근 본 창고',
+              style: TextStyle(
+                fontSize: 20,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {},
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReservationStatus() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Container(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '예약 현황',
+              style: TextStyle(
+                fontSize: 20,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => ListScreen()
+                  ),
+                );
+              },
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMyWarehouse() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Container(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '내 창고',
+              style: TextStyle(
+                fontSize: 20,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {},
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignOut() {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => SignoutScreen()
+            ),
+          );
+        },
+        child: Text(
+          '로그아웃',
+          style: TextStyle(
+            color: Colors.grey,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showProfileOptions(BuildContext context) {
+    if (user == null) return;
+
     showDialog(   // 다이어로그 설정
       context: context, // context - 현재 화면 / 내가 있는 경로에 Dialog를 띄어줘야 하기 때문
       builder: (_) => AlertDialog(
@@ -227,10 +362,10 @@ class _InfoScreenState extends State<InfoScreen> {
                 Navigator.pop(context);
                 await FirebaseFirestore.instance
                     .collection('users')
-                    .doc(user.uid)
-                    .update({'photoURL': user.photoURL});
+                    .doc(user!.uid)
+                    .update({'photoURL': user!.photoURL});
                 setState(() {
-                  appUser = appUser!.copyWith(photoURL: user.photoURL);
+                  appUser = appUser!.copyWith(photoURL: user!.photoURL);
                 });
               },
             ),
@@ -241,6 +376,8 @@ class _InfoScreenState extends State<InfoScreen> {
   }
 
   Future<void> _pickAndUploadImage() async {
+    if (user == null) return;
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
@@ -250,7 +387,7 @@ class _InfoScreenState extends State<InfoScreen> {
     _showLoadingDialog(context);
 
     try {
-      final fileName = '${user.uid}.jpg';
+      final fileName = '${user!.uid}.jpg';
       final storageRef = FirebaseStorage.instance
           .ref()
           .child('profile_images')
@@ -261,7 +398,7 @@ class _InfoScreenState extends State<InfoScreen> {
 
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(user!.uid)
           .update({'photoURL': downloadURL});
 
       setState(() {
