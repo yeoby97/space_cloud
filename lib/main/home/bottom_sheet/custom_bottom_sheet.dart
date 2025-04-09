@@ -31,26 +31,33 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
   final double _maxHeight = 700;
   double _dragStart = 0;
 
-  final NumberFormat numberFormat = NumberFormat.decimalPattern();
-  Map<String, String> spaceIdToDocId = {}; // ✅ spaceId → docId 매핑 저장
+  final numberFormat = NumberFormat.decimalPattern();
+  Map<String, String> _spaceIdToDocId = {}; // spaceId → docId 매핑
 
   @override
   void initState() {
     super.initState();
     widget.isOpenNotifier.addListener(_handleCloseSignal);
-
     if (widget.isInitial) {
       _sheetHeight = 0;
-      Future.microtask(() {
-        setState(() {
-          _sheetHeight = 300;
-        });
-      });
-    } else {
-      _sheetHeight = 300;
+      Future.microtask(() => setState(() => _sheetHeight = 300));
     }
+    _loadSpaces();
+  }
 
-    _loadSpaces(); // ✅ 공간 문서 로드
+  @override
+  void dispose() {
+    widget.isOpenNotifier.removeListener(_handleCloseSignal);
+    super.dispose();
+  }
+
+  void _handleCloseSignal() {
+    if (!widget.isOpenNotifier.value) {
+      setState(() => _sheetHeight = 0);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) widget.onClose();
+      });
+    }
   }
 
   Future<void> _loadSpaces() async {
@@ -62,23 +69,11 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
 
     final mapping = <String, String>{};
     for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final spaceId = data['spaceId'] ?? '';
+      final spaceId = doc['spaceId'] ?? '';
       mapping[spaceId] = doc.id;
     }
 
-    setState(() {
-      spaceIdToDocId = mapping;
-    });
-  }
-
-  void _handleCloseSignal() {
-    if (!widget.isOpenNotifier.value) {
-      setState(() => _sheetHeight = 0);
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) widget.onClose();
-      });
-    }
+    setState(() => _spaceIdToDocId = mapping);
   }
 
   void _handleDragStart(DragStartDetails details) {
@@ -94,32 +89,22 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
   }
 
   void _handleDragEnd(DragEndDetails details) {
-    final delta = details.velocity.pixelsPerSecond.dy;
-
+    final velocity = details.velocity.pixelsPerSecond.dy;
     if (_sheetHeight < 300) {
       setState(() => _sheetHeight = 0);
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) widget.onClose();
       });
     } else {
-      if (delta > 0) {
+      if (velocity > 0) {
         setState(() => _sheetHeight = 300);
-      } else if (delta < 0) {
+      } else if (velocity < 0) {
         setState(() => _sheetHeight = _maxHeight);
       } else {
-        if ((_sheetHeight - 300) < (_maxHeight - _sheetHeight)) {
-          setState(() => _sheetHeight = 300);
-        } else {
-          setState(() => _sheetHeight = _maxHeight);
-        }
+        final midpoint = (_maxHeight + 300) / 2;
+        setState(() => _sheetHeight = _sheetHeight < midpoint ? 300 : _maxHeight);
       }
     }
-  }
-
-  @override
-  void dispose() {
-    widget.isOpenNotifier.removeListener(_handleCloseSignal);
-    super.dispose();
   }
 
   @override
@@ -189,7 +174,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                       Text('가격: ${numberFormat.format(widget.warehouse.price)}원'),
                       Text('보관 공간: ${numberFormat.format(widget.warehouse.count)}칸'),
                       const SizedBox(height: 6),
-                      Text('등록일: ${widget.warehouse.createdAt?.toLocal().toString().split(' ').first}'),
+                      Text('등록일: ${widget.warehouse.createdAt?.toLocal().toString().split(' ').first ?? ''}'),
                       const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -212,7 +197,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                       const SizedBox(height: 12),
                       const Text("예약 가능한 공간", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(height: 8),
-                      _buildSpaceGrid(widget.warehouse),
+                      _buildSpaceGrid(),
                     ],
                   ),
                 ),
@@ -224,11 +209,14 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
     );
   }
 
-  Widget _buildSpaceGrid(Warehouse warehouse) {
-    final rows = warehouse.layout['rows'] ?? 0;
-    final cols = warehouse.layout['columns'] ?? 0;
+  Widget _buildSpaceGrid() {
+    final layout = widget.warehouse.layout;
+    final rows = layout['rows'] ?? 0;
+    final cols = layout['columns'] ?? 0;
 
-    if (rows <= 0 || cols <= 0) return const Text('잘못된 배치 정보입니다.');
+    if (rows <= 0 || cols <= 0) {
+      return const Text('잘못된 배치 정보입니다.');
+    }
 
     return Column(
       children: List.generate(rows, (r) {
@@ -236,37 +224,10 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(cols, (c) {
             final spaceId = '${String.fromCharCode(65 + r)}${c + 1}';
-            final spaceDocId = spaceIdToDocId[spaceId];
+            final docId = _spaceIdToDocId[spaceId];
 
             return GestureDetector(
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: Text('$spaceId 예약'),
-                    content: const Text('이 공간을 예약하시겠습니까?'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          if (spaceDocId != null) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ReservationScreen(
-                                  warehouseId: warehouse.id,
-                                  spaceDocId: spaceDocId,
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        child: const Text('예약'),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              onTap: () => _showReservationDialog(spaceId, docId),
               child: Container(
                 margin: const EdgeInsets.all(4),
                 width: 32,
@@ -282,6 +243,38 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
           }),
         );
       }),
+    );
+  }
+
+  void _showReservationDialog(String spaceId, String? docId) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('$spaceId 예약'),
+        content: const Text('이 공간을 예약하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (docId != null) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ReservationScreen(
+                      warehouseId: widget.warehouse.id,
+                      spaceDocId: docId,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Text('예약'),
+          ),
+        ],
+      ),
     );
   }
 }
