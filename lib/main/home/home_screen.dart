@@ -1,14 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:space_cloud/main/home/search/search_screen.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../data/warehouse.dart';
 import '../warehouse/warehouse_management.dart';
 import 'bottom_sheet/custom_bottom_sheet.dart';
+import 'home_view_model.dart';
 import 'my_location/my_location_view_model.dart';
+import 'search/search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ValueNotifier<bool> isBottomSheetOpenNotifier;
@@ -19,14 +19,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Marker> _markers = [];
   Warehouse? _selectedWarehouse;
   GoogleMapController? _mapController;
 
   @override
   void initState() {
     super.initState();
-    _loadWarehouseMarkers();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HomeViewModel>().loadWarehouseMarkers(
+        onTapWarehouse: (warehouse) {
+          widget.isBottomSheetOpenNotifier.value = true;
+          setState(() => _selectedWarehouse = warehouse);
+        },
+      );
+    });
   }
 
   @override
@@ -37,10 +43,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locationVM = context.watch<MyLocationViewModel>();
+    final homeVM = context.watch<HomeViewModel>();
+    final position = locationVM.currentPosition;
+
     return Scaffold(
       body: Stack(
         children: [
-          _buildGoogleMap(),
+          if (position == null)
+            const Center(child: CircularProgressIndicator())
+          else
+            GoogleMap(
+              mapToolbarEnabled: false,
+              zoomControlsEnabled: false,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              initialCameraPosition: CameraPosition(
+                target: LatLng(position.latitude, position.longitude),
+                zoom: 16,
+              ),
+              onMapCreated: (controller) => _mapController ??= controller,
+              markers: Set<Marker>.from(homeVM.markers),
+            ),
           _buildSearchBox(),
           SafeArea(child: _buildLocationButton()),
           if (_selectedWarehouse != null)
@@ -54,7 +78,9 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => WarehouseManagement(warehouse: _selectedWarehouse!),
+                    builder: (_) => WarehouseManagement(
+                      warehouse: _selectedWarehouse!,
+                    ),
                   ),
                 );
               },
@@ -62,105 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-  }
-
-  Widget _buildGoogleMap() {
-    return Consumer<MyLocationViewModel>(
-      builder: (context, viewModel, _) {
-        final position = viewModel.currentPosition;
-
-        if (position == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return GoogleMap(
-          mapToolbarEnabled: false,
-          zoomControlsEnabled: false,
-          myLocationEnabled: true,
-          myLocationButtonEnabled: false,
-          initialCameraPosition: CameraPosition(
-            target: LatLng(position.latitude, position.longitude),
-            zoom: 16,
-          ),
-          onMapCreated: (controller) {
-            _mapController ??= controller;
-          },
-          markers: Set<Marker>.from(_markers),
-        );
-      },
-    );
-  }
-
-  Widget _buildLocationButton() {
-    return Align(
-      alignment: Alignment.bottomLeft,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: FloatingActionButton(
-          shape: const CircleBorder(),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black.withAlpha(150),
-          onPressed: _goToCurrentLocation,
-          child: const Icon(Icons.location_searching),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _goToCurrentLocation() async {
-    final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
-    );
-
-    _mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(position.latitude, position.longitude),
-          zoom: 16,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _onSearchTap() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SearchScreen()),
-    );
-
-    final LatLng? location = result?['location'];
-    if (location != null) {
-      _mapController?.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(target: location, zoom: 16),
-        ),
-      );
-    }
-  }
-
-  Future<void> _loadWarehouseMarkers() async {
-    final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
-
-    final markers = snapshot.docs.map((doc) {
-      final warehouse = Warehouse.fromDoc(doc);
-
-      return Marker(
-        markerId: MarkerId(warehouse.id),
-        position: LatLng(warehouse.lat, warehouse.lng),
-        infoWindow: InfoWindow(title: warehouse.address),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        onTap: () {
-          widget.isBottomSheetOpenNotifier.value = true;
-          setState(() => _selectedWarehouse = warehouse);
-        },
-      );
-    }).toList();
-
-    _markers
-      ..clear()
-      ..addAll(markers);
-    setState(() {});
   }
 
   Widget _buildSearchBox() {
@@ -186,11 +113,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
                 borderRadius: BorderRadius.circular(10.0),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
+              child: const Padding(
+                padding: EdgeInsets.all(10.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Icon(Icons.map),
                     SizedBox(width: 10),
                     Expanded(
@@ -212,5 +139,51 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildLocationButton() {
+    return Align(
+      alignment: Alignment.bottomLeft,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: FloatingActionButton(
+          shape: const CircleBorder(),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black.withAlpha(150),
+          onPressed: _goToCurrentLocation,
+          child: const Icon(Icons.location_searching),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _goToCurrentLocation() async {
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    );
+
+    _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(position.latitude, position.longitude),
+          zoom: 16,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onSearchTap() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SearchScreen()),
+    );
+
+    final LatLng? location = result?['location'];
+    if (location != null) {
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: location, zoom: 16),
+        ),
+      );
+    }
   }
 }

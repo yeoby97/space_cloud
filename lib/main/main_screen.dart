@@ -9,6 +9,7 @@ import 'package:space_cloud/main/info/info_screen.dart';
 import 'package:space_cloud/main/home/home_screen.dart';
 import 'package:space_cloud/main/list/list_screen.dart';
 
+import 'home/home_view_model.dart';
 import 'home/my_location/my_location_view_model.dart';
 
 class MainScreen extends StatefulWidget {
@@ -51,11 +52,14 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   List<Widget> get _bodies => [
-    HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
+    ChangeNotifierProvider(
+      create: (_) => HomeViewModel(),
+      child: HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
+    ),
     const MyWarehouseScreen(),
     ListScreen(),
     const InfoScreen(),
-  ];
+  ];b
 
   SpeedDialChild _buildDial({
     required IconData icon,
