@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:space_cloud/main/home/search_screen.dart';
+import 'package:space_cloud/main/home/search/search_screen.dart';
 
 import '../../data/warehouse.dart';
 import '../warehouse/warehouse_management.dart';
@@ -21,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final List<Marker> _markers = [];
   Warehouse? _selectedWarehouse;
-  late GoogleMapController _mapController;
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
@@ -34,23 +34,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          _googleMap(),
-          _SearchBox(onTap: _onTap),
-          SafeArea(child: _floatingButton()),
+          _buildGoogleMap(),
+          _SearchBox(onTap: _onSearchTap),
+          SafeArea(child: _buildLocationButton()),
           if (_selectedWarehouse != null)
             CustomBottomSheet(
               warehouse: _selectedWarehouse!,
               isOpenNotifier: widget.isBottomSheetOpenNotifier,
               onClose: () {
                 widget.isBottomSheetOpenNotifier.value = false;
-                setState(() {
-                  _selectedWarehouse = null;
-                });
+                setState(() => _selectedWarehouse = null);
               },
               onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => WarehouseManagement(warehouse: _selectedWarehouse!),
-                ));
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => WarehouseManagement(warehouse: _selectedWarehouse!),
+                  ),
+                );
               },
             ),
         ],
@@ -58,12 +58,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Consumer<MyLocationViewModel> _googleMap() {
+  Widget _buildGoogleMap() {
     return Consumer<MyLocationViewModel>(
-      builder: (context, viewModel, child) {
-        final currentPosition = viewModel.currentPosition;
+      builder: (context, viewModel, _) {
+        final position = viewModel.currentPosition;
 
-        if (currentPosition == null) {
+        if (position == null) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -73,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
           myLocationEnabled: true,
           myLocationButtonEnabled: false,
           initialCameraPosition: CameraPosition(
-            target: LatLng(currentPosition.latitude, currentPosition.longitude),
+            target: LatLng(position.latitude, position.longitude),
             zoom: 16,
           ),
           onMapCreated: (controller) => _mapController = controller,
@@ -83,15 +83,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Align _floatingButton() {
+  Widget _buildLocationButton() {
     return Align(
       alignment: Alignment.bottomLeft,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: FloatingActionButton(
           shape: const CircleBorder(),
-          foregroundColor: Colors.black.withAlpha(150),
           backgroundColor: Colors.white,
+          foregroundColor: Colors.black.withAlpha(150),
           onPressed: _goToCurrentLocation,
           child: const Icon(Icons.location_searching),
         ),
@@ -99,58 +99,53 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _goToCurrentLocation() async {
-    final currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+  Future<void> _goToCurrentLocation() async {
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
 
-    _mapController.animateCamera(CameraUpdate.newCameraPosition(
-      CameraPosition(
-        bearing: 0,
-        target: LatLng(currentPosition.latitude, currentPosition.longitude),
-        zoom: 16.0,
+    _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(position.latitude, position.longitude),
+          zoom: 16,
+        ),
       ),
-    ));
+    );
   }
 
-  void _onTap() async {
+  Future<void> _onSearchTap() async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const SearchScreen()),
     );
 
-    if (result?['location'] != null) {
-      _mapController.animateCamera(CameraUpdate.newCameraPosition(
-        CameraPosition(
-          bearing: 0,
-          target: result['location'],
-          zoom: 16.0,
+    final LatLng? location = result?['location'];
+    if (location != null) {
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: location, zoom: 16),
         ),
-      ));
+      );
     }
   }
 
   Future<void> _loadWarehouseMarkers() async {
-    final snapshot =
-    await FirebaseFirestore.instance.collection('warehouse').get();
+    final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
 
-    final markers = <Marker>[];
-
-    for (var doc in snapshot.docs) {
+    final markers = snapshot.docs.map((doc) {
       final warehouse = Warehouse.fromDoc(doc);
 
-      final marker = Marker(
+      return Marker(
         markerId: MarkerId(warehouse.id),
         position: LatLng(warehouse.lat, warehouse.lng),
         infoWindow: InfoWindow(title: warehouse.address),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         onTap: () {
           widget.isBottomSheetOpenNotifier.value = true;
-          setState(() {
-            _selectedWarehouse = warehouse;
-          });
+          setState(() => _selectedWarehouse = warehouse);
         },
       );
-      markers.add(marker);
-    }
+    }).toList();
 
     setState(() {
       _markers.clear();
@@ -193,16 +188,15 @@ class _SearchBox extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Icon(Icons.map),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                        child: Text(
-                          '장소나 위치를 검색하세요.',
-                          style: TextStyle(
-                            color: Colors.black.withAlpha(100),
-                            fontSize: 15,
-                          ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        '장소나 위치를 검색하세요.',
+                        style: TextStyle(
+                          color: Colors.black45,
+                          fontSize: 15,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const Icon(Icons.search),

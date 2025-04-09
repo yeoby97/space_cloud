@@ -23,13 +23,6 @@ class _MainScreenState extends State<MainScreen> {
   DateTime? _lastBackPressed;
   final ValueNotifier<bool> _isBottomSheetOpen = ValueNotifier(false);
 
-  List<Widget> get _bodies => [
-    HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
-    const MyWarehouseScreen(),
-    ListScreen(),
-    const InfoScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -56,6 +49,13 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+
+  List<Widget> get _bodies => [
+    HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
+    const MyWarehouseScreen(),
+    ListScreen(),
+    const InfoScreen(),
+  ];
 
   SpeedDialChild _buildDial({
     required IconData icon,

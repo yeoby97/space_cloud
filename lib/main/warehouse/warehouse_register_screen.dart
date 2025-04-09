@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/warehouse.dart';
-import '../home/search_screen.dart';
+import '../home/search/search_screen.dart';
 
 class WarehouseRegisterScreen extends StatefulWidget {
   const WarehouseRegisterScreen({super.key});
