@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../../data/warehouse.dart';
 import '../warehouse/warehouse_management.dart';
 import 'bottom_sheet/custom_bottom_sheet.dart';
 import 'home_view_model.dart';
@@ -19,7 +18,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Warehouse? _selectedWarehouse;
   GoogleMapController? _mapController;
 
   @override
@@ -29,7 +27,6 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<HomeViewModel>().loadWarehouseMarkers(
         onTapWarehouse: (warehouse) {
           widget.isBottomSheetOpenNotifier.value = true;
-          setState(() => _selectedWarehouse = warehouse);
         },
       );
     });
@@ -46,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final locationVM = context.watch<MyLocationViewModel>();
     final homeVM = context.watch<HomeViewModel>();
     final position = locationVM.currentPosition;
+    final selectedWarehouse = homeVM.selectedWarehouse;
 
     return Scaffold(
       body: Stack(
@@ -67,19 +65,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           _buildSearchBox(),
           SafeArea(child: _buildLocationButton()),
-          if (_selectedWarehouse != null)
+          if (selectedWarehouse != null)
             CustomBottomSheet(
-              warehouse: _selectedWarehouse!,
+              warehouse: selectedWarehouse,
               isOpenNotifier: widget.isBottomSheetOpenNotifier,
               onClose: () {
                 widget.isBottomSheetOpenNotifier.value = false;
-                setState(() => _selectedWarehouse = null);
+                homeVM.clearSelectedWarehouse();
               },
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => WarehouseManagement(
-                      warehouse: _selectedWarehouse!,
+                      warehouse: selectedWarehouse,
                     ),
                   ),
                 );

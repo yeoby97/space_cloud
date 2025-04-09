@@ -205,7 +205,7 @@ class _InfoScreenState extends State<InfoScreen> {
           _buildMenuItem('최근 본 창고'),
           const Divider(indent: 20, endIndent: 20),
           const Spacer(),
-          _buildSignOut(),
+          _buildSignOut(FirebaseAuth.instance.currentUser),
         ],
       ),
     );
@@ -231,11 +231,13 @@ class _InfoScreenState extends State<InfoScreen> {
     );
   }
 
-  Widget _buildSignOut() {
+  Widget _buildSignOut(User? user) {
+    if (user == null) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: GestureDetector(
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SignoutScreen())),
+        onTap: () => showLogoutDialog(context),
         child: const Text('로그아웃', style: TextStyle(color: Colors.grey)),
       ),
     );
