@@ -51,6 +51,7 @@ dependencies:
   firebase_storage: ^12.4.4
   flutter_speed_dial: ^7.0.0
   intl: ^0.20.2
+  flutter_native_splash: ^2.4.6
 
 dev_dependencies:
   flutter_test:
@@ -106,3 +107,7 @@ assets:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#42a5f5"
+  android_12:

@@ -24,10 +24,21 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   DateTime? _lastBackPressed;
-  late Location _location;
   final ValueNotifier<bool> _isBottomSheetOpen = ValueNotifier(false);
   User? user = FirebaseAuth.instance.currentUser;
   late final List<Widget> _bodies;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _bodies = [
+      HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
+      const MyWarehouseScreen(),
+      ListScreen(),
+      const InfoScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +52,7 @@ class _MainScreenState extends State<MainScreen> {
           }
 
           if (_isBottomSheetOpen.value) {
-            _isBottomSheetOpen.value = false; // 바텀 시트 닫기 신호
+            _isBottomSheetOpen.value = false;
             return false;
           }
 
@@ -55,7 +66,7 @@ class _MainScreenState extends State<MainScreen> {
             return false;
           }
 
-          return true; // 앱 종료 허용
+          return true;
         },
         child: Scaffold(
           body: _bodies[_currentIndex],
@@ -94,35 +105,9 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _location = Location();
-    sendPermission();
-
-    _bodies = [
-      HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
-      const MyWarehouseScreen(),
-      ListScreen(),
-      const InfoScreen(),
-    ];
-  }
-
-  void _setTab(int index) async{
+  void _setTab(int index) {
     setState(() {
       _currentIndex = index;
     });
-  }
-
-  Future<void> sendPermission() async {
-    bool serviceEnabled = await _location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await _location.requestService();
-      if (!serviceEnabled) return;
-    }
-    PermissionStatus permissionGranted = await _location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await _location.requestPermission();
-    }
   }
 }
