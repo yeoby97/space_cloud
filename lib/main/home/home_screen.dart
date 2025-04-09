@@ -30,12 +30,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
           _buildGoogleMap(),
-          _SearchBox(onTap: _onSearchTap),
+          _buildSearchBox(),
           SafeArea(child: _buildLocationButton()),
           if (_selectedWarehouse != null)
             CustomBottomSheet(
@@ -76,7 +82,9 @@ class _HomeScreenState extends State<HomeScreen> {
             target: LatLng(position.latitude, position.longitude),
             zoom: 16,
           ),
-          onMapCreated: (controller) => _mapController = controller,
+          onMapCreated: (controller) {
+            _mapController ??= controller;
+          },
           markers: Set<Marker>.from(_markers),
         );
       },
@@ -101,7 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _goToCurrentLocation() async {
     final position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      ),
     );
 
     _mapController?.animateCamera(
@@ -147,26 +157,20 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }).toList();
 
-    setState(() {
-      _markers.clear();
-      _markers.addAll(markers);
-    });
+    _markers
+      ..clear()
+      ..addAll(markers);
+    setState(() {});
   }
-}
 
-class _SearchBox extends StatelessWidget {
-  final VoidCallback onTap;
-  const _SearchBox({super.key, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSearchBox() {
     return Align(
       alignment: Alignment.topCenter,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: GestureDetector(
-            onTap: onTap,
+            onTap: _onSearchTap,
             child: Container(
               width: double.infinity,
               height: 60,
@@ -186,10 +190,10 @@ class _SearchBox extends StatelessWidget {
                 padding: const EdgeInsets.all(10.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Icon(Icons.map),
-                    const SizedBox(width: 10),
-                    const Expanded(
+                  children: const [
+                    Icon(Icons.map),
+                    SizedBox(width: 10),
+                    Expanded(
                       child: Text(
                         '장소나 위치를 검색하세요.',
                         style: TextStyle(
@@ -199,7 +203,7 @@ class _SearchBox extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Icon(Icons.search),
+                    Icon(Icons.search),
                   ],
                 ),
               ),
