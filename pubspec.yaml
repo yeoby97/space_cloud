@@ -109,5 +109,5 @@ assets:
   # see https://flutter.dev/to/font-from-package
 
 flutter_native_splash:
-  color: "#42a5f5"
+  color: "#ffffff"
   android_12:
