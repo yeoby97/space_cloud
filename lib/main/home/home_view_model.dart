@@ -17,17 +17,19 @@ class HomeViewModel extends ChangeNotifier {
     _markers.clear();
     for (var doc in snapshot.docs) {
       final warehouse = Warehouse.fromDoc(doc);
+
       final marker = Marker(
         markerId: MarkerId(warehouse.id),
         position: LatLng(warehouse.lat, warehouse.lng),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         infoWindow: InfoWindow(title: warehouse.address),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         onTap: () {
           _selectedWarehouse = warehouse;
           notifyListeners();
           onTapWarehouse(warehouse);
         },
       );
+
       _markers.add(marker);
     }
 
