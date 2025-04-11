@@ -1,141 +1,216 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:space_cloud/main/list/reservation_detail_screen.dart';
 
 class ListScreen extends StatefulWidget {
-  const ListScreen({super.key});
+
+  ListScreen({super.key});
 
   @override
-  State<ListScreen> createState() => _ListScreenState();
+  State<ListScreen> createState() => _ListScreen();
 }
 
-class _ListScreenState extends State<ListScreen> {
-  final List<DocumentSnapshot> _warehouseDocs = [];
-  final List<DocumentSnapshot> _reservationDocs = [];
+class _ListScreen extends State<ListScreen> {
+
+  List<DocumentSnapshot> _warehouseDocs = [];
+  List<DocumentSnapshot> _spaceDocs = [];
+  List<DocumentSnapshot> _reservationDocs = [];
   bool _isLoading = true;
+  User? user = FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
+    _loadReservedSpaces();
     super.initState();
-    _fetchReservations();
-  }
-
-  Future<void> _fetchReservations() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final reservations = await FirebaseFirestore.instance
-        .collectionGroup('reservations')
-        .where('reservedBy', isEqualTo: user.uid)
-        .get();
-
-    final List<DocumentSnapshot> warehouses = [];
-    final List<DocumentSnapshot> reservationsList = [];
-
-    for (var reservation in reservations.docs) {
-      final spaceRef = reservation.reference.parent.parent;
-      final warehouseRef = spaceRef?.parent.parent;
-
-      if (warehouseRef != null) {
-        final warehouseDoc = await warehouseRef.get();
-        warehouses.add(warehouseDoc);
-        reservationsList.add(reservation);
-      }
-    }
-
-    setState(() {
-      _warehouseDocs.clear();
-      _warehouseDocs.addAll(warehouses);
-      _reservationDocs.clear();
-      _reservationDocs.addAll(reservationsList);
-      _isLoading = false;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("사용 중인 창고")),
+      appBar: AppBar(
+        title: Text("사용 중인 창고"),
+      ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : ListView.builder(
         itemCount: _reservationDocs.length,
-        itemBuilder: (_, index) {
-          final reservation = _reservationDocs[index].data() as Map<String, dynamic>;
+        itemBuilder: (context, index) {
           final warehouse = _warehouseDocs[index].data() as Map<String, dynamic>;
+          final reservation = _reservationDocs[index].data() as Map<String, dynamic>;
+          final space = _spaceDocs[index].data() as Map<String, dynamic>;
 
-          final start = _parseDate(reservation['start']);
-          final end = _parseDate(reservation['end']);
           final address = warehouse['address'] ?? '';
-          final detail = warehouse['detailAddress'] ?? '';
-          final images = List<String>.from(warehouse['images'] ?? []);
+          final detailAddress = warehouse['detailAddress'] ?? '';
+          final spaceName = space['spaceId'] ?? '';
+          final imageUrls = List<String>.from(warehouse['images'] ?? []);
+          final startDate = _parseDate(reservation['start']);
+          final endDate = _parseDate(reservation['end']);
+          print(imageUrls[0]);
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReservationDetailPage(
+                    warehouse: warehouse,
+                    space: space,
+                    reservation: reservation,
+                  ),
+                ),
+              );
+            },
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReservationDetailPage(
+                      warehouse: warehouse,
+                      space: space,
+                      reservation: reservation,
+                    ),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  elevation: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 이미지 영역
+                        if (imageUrls.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              imageUrls[0],
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        const SizedBox(width: 12),
 
-          return _buildWarehouseCard(address, detail, start, end, images);
+                        // 정보 영역
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 주소
+                              Text(
+                                address,
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              const SizedBox(height: 4),
+
+                              // 상세 주소
+                              Text(
+                                detailAddress,
+                                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              const SizedBox(height: 12),
+
+                              // 상세 주소
+                              Text(
+                                spaceName,
+                                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              const SizedBox(height: 12),
+
+                              // 날짜
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "${_formatDate(startDate)} ~ ${_formatDate(endDate)}",
+                                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
         },
       ),
     );
   }
 
-  Widget _buildWarehouseCard(
-      String address,
-      String detailAddress,
-      DateTime start,
-      DateTime end,
-      List<String> imageUrls,
-      ) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        elevation: 3,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (imageUrls.isNotEmpty)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                child: Image.network(
-                  imageUrls.first,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(address, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(detailAddress, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${_formatDate(start)} ~ ${_formatDate(end)}',
-                        style: const TextStyle(fontSize: 14, color: Colors.black87),
-                      ),
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Future<void> _loadReservedSpaces() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final querySnapshot = await FirebaseFirestore.instance
+        .collectionGroup('reservations')
+        .where('reservedBy', isEqualTo: currentUser!.uid)
+        .get();
 
-  DateTime _parseDate(dynamic value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
-    return DateTime.now();
+    List<DocumentSnapshot> warehouses = [];
+    List<DocumentSnapshot> spaces = [];
+    List<DocumentSnapshot> reservations = [];
+
+    for (var reservationDoc in querySnapshot.docs) {
+      print("존재함");
+      final reservationRef = reservationDoc.reference;
+      final spaceRef = reservationRef.parent.parent;
+      final warehouseRef = spaceRef?.parent.parent;
+
+      if (spaceRef != null && warehouseRef != null) {
+        // 예약 문서 추가
+        reservations.add(reservationDoc);
+
+        // 공간 문서 가져오기
+        final spaceDoc = await spaceRef.get();
+        spaces.add(spaceDoc);
+
+        // 창고 문서 가져오기
+        final warehouseDoc = await warehouseRef.get();
+        warehouses.add(warehouseDoc);
+      }
+    }
+
+    setState(() {
+      _reservationDocs = reservations;
+      _spaceDocs = spaces;
+      _warehouseDocs = warehouses;
+      _isLoading = false;
+    });
   }
 
   String _formatDate(DateTime date) {
-    return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+    return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
+  }
+
+  DateTime _parseDate(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    } else if (value is String) {
+      return DateTime.parse(value);
+    } else {
+      return DateTime.now(); // fallback
+    }
   }
 }

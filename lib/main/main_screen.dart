@@ -9,6 +9,7 @@ import 'package:space_cloud/main/info/info_screen.dart';
 import 'package:space_cloud/main/home/home_screen.dart';
 import 'package:space_cloud/main/list/list_screen.dart';
 import 'package:space_cloud/main/warehouse/my_warehouse_view_model.dart';
+import 'package:space_cloud/sign/signin/signin_screen.dart';
 
 import 'home/home_view_model.dart';
 import 'home/my_location/my_location_view_model.dart';
@@ -24,6 +25,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   DateTime? _lastBackPressed;
   final ValueNotifier<bool> _isBottomSheetOpen = ValueNotifier(false);
+  User? user = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +79,16 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _setTab(int index) {
+  void _setTab(int index) async{
+    if(index == 2 && user == null){
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SignInScreen()),
+      );
+      if (result == null) {
+        return;
+      }
+    }
     setState(() {
       _currentIndex = index;
     });
@@ -88,7 +99,6 @@ class _MainScreenState extends State<MainScreen> {
       setState(() => _currentIndex = 0);
       return false;
     }
-
     if (_isBottomSheetOpen.value) {
       _isBottomSheetOpen.value = false;
       return false;
