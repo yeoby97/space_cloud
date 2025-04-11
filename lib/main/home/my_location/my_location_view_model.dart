@@ -9,23 +9,18 @@ class MyLocationViewModel extends ChangeNotifier {
   StreamSubscription<Position>? _subscription;
 
   MyLocationViewModel() {
-    _startListening();
-  }
-
-  Position? get currentPosition => _currentPosition;
-
-  void _startListening() {
-    _subscription?.cancel();
     _subscription = _myLocation.positionStream.listen((position) {
       _currentPosition = position;
       notifyListeners();
     });
   }
 
+  Position? get currentPosition => _currentPosition;
+
   void reset() {
     _subscription?.cancel();
+    _subscription = null;
     _currentPosition = null;
-    _startListening();
     notifyListeners();
   }
 

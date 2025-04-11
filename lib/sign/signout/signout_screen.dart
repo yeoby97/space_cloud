@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import '../../main/home/home_view_model.dart';
-
 import '../../main/home/my_location/my_location_view_model.dart';
 import '../../main/main_screen.dart';
 
@@ -20,12 +18,9 @@ void showLogoutDialog(BuildContext context) {
         TextButton(
           onPressed: () async {
             await FirebaseAuth.instance.signOut();
-
+            final locationVM = context.read<MyLocationViewModel>();
+            locationVM.reset();
             if (context.mounted) {
-              context.read<MyLocationViewModel>().reset();
-              context.read<HomeViewModel>().clearMarkers();
-              context.read<HomeViewModel>().clearSelectedWarehouse();
-
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const MainScreen()),
                     (_) => false,
