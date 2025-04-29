@@ -10,7 +10,8 @@ import 'package:space_cloud/main/home/home_screen.dart';
 import 'package:space_cloud/main/list/list_screen.dart';
 import 'package:space_cloud/main/warehouse/my_warehouse_view_model.dart';
 import 'package:space_cloud/sign/signin/signin_screen.dart';
-
+import 'home/bottom_sheet/favorite/favorite_service.dart';
+import 'home/bottom_sheet/favorite/favorite_view_model.dart';
 import 'home/home_view_model.dart';
 import 'home/my_location/my_location_view_model.dart';
 
@@ -25,7 +26,6 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   DateTime? _lastBackPressed;
   final ValueNotifier<bool> _isBottomSheetOpen = ValueNotifier(false);
-  User? user = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -34,66 +34,72 @@ class _MainScreenState extends State<MainScreen> {
       child: WillPopScope(
         onWillPop: _onWillPop,
         child: Scaffold(
-          body: _bodies[_currentIndex],
-          floatingActionButton: SpeedDial(
-            animatedIcon: AnimatedIcons.menu_close,
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black.withAlpha(150),
-            overlayOpacity: 0.3,
-            spacing: 10,
-            spaceBetweenChildren: 10,
-            children: [
-              _buildDial(icon: Icons.home, label: '홈', tab: 0),
-              _buildDial(icon: Icons.warehouse, label: '내 창고', tab: 1),
-              _buildDial(icon: Icons.calendar_month, label: '예약현황', tab: 2),
-              _buildDial(icon: Icons.person, label: '내 정보', tab: 3),
-            ],
-          ),
+          body: _buildBody(),
+          floatingActionButton: _buildFloatingButton(),
         ),
       ),
     );
   }
 
-  List<Widget> get _bodies => [
-    ChangeNotifierProvider(
-      create: (_) => HomeViewModel(),
-      child: HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
-    ),
-    ChangeNotifierProvider(
-    create: (_) => MyWarehouseViewModel(),
-    child: const MyWarehouseScreen(),
-    ),
-    ListScreen(),
-    const InfoScreen(),
-  ];
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 0:
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => HomeViewModel()),
+            ChangeNotifierProvider(create: (_) => FavoriteViewModel(favoriteService: FavoriteService())),
+          ],
+          child: HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
+        );
+      case 1:
+        return ChangeNotifierProvider(
+          create: (_) => MyWarehouseViewModel(),
+          child: const MyWarehouseScreen(),
+        );
+      case 2:
+        return ListScreen();
+      case 3:
+        return const InfoScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
-  SpeedDialChild _buildDial({
-    required IconData icon,
-    required String label,
-    required int tab,
-  }) {
-    return SpeedDialChild(
-      child: Icon(icon),
-      label: label,
-      onTap: () => _setTab(tab),
+  Widget _buildFloatingButton() {
+    return SpeedDial(
+      animatedIcon: AnimatedIcons.menu_close,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black.withAlpha(150),
+      overlayOpacity: 0.3,
+      spacing: 10,
+      spaceBetweenChildren: 10,
+      children: [
+        _buildDial(icon: Icons.home, label: '홈', tab: 0),
+        _buildDial(icon: Icons.warehouse, label: '내 창고', tab: 1),
+        _buildDial(icon: Icons.calendar_month, label: '예약현황', tab: 2),
+        _buildDial(icon: Icons.person, label: '내 정보', tab: 3),
+      ],
     );
   }
 
-  void _setTab(int index) async{
-    if(index == 2 && user == null){
+  SpeedDialChild _buildDial({required IconData icon, required String label, required int tab}) {
+    return SpeedDialChild(
+      child: Icon(icon),
+      label: label,
+      onTap: () => _onTabSelected(tab),
+    );
+  }
+
+  Future<void> _onTabSelected(int index) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (index == 2 && user == null) {
       final result = await Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => SignInScreen()),
+        MaterialPageRoute(builder: (context) => const SignInScreen()),
       );
-      if (result == null) {
-        return;
-      } else {
-        user = FirebaseAuth.instance.currentUser;
-      }
+      if (result == null) return;
     }
-    setState(() {
-      _currentIndex = index;
-    });
+    setState(() => _currentIndex = index);
   }
 
   Future<bool> _onWillPop() async {
@@ -107,8 +113,7 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     final now = DateTime.now();
-    if (_lastBackPressed == null ||
-        now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
+    if (_lastBackPressed == null || now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
       _lastBackPressed = now;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

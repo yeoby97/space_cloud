@@ -1,7 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:space_cloud/main/home/bottom_sheet/favorite/favorite_button.dart';
+import 'package:space_cloud/main/home/bottom_sheet/favorite/favorite_service.dart';
+import 'package:space_cloud/main/home/bottom_sheet/favorite/favorite_view_model.dart';
 
 import '../warehouse/warehouse_management.dart';
 import 'bottom_sheet/custom_bottom_sheet.dart';
@@ -66,23 +70,28 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildSearchBox(),
           SafeArea(child: _buildLocationButton()),
           if (selectedWarehouse != null)
-            CustomBottomSheet(
-              warehouse: selectedWarehouse,
-              isOpenNotifier: widget.isBottomSheetOpenNotifier,
-              onClose: () {
-                widget.isBottomSheetOpenNotifier.value = false;
-                homeVM.clearSelectedWarehouse();
-              },
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => WarehouseManagement(
-                      warehouse: selectedWarehouse,
-                    ),
-                  ),
-                );
-              },
-            ),
+           ChangeNotifierProvider(
+             create: (_) => FavoriteViewModel(
+               favoriteService: FavoriteService(),
+             ),
+             child:  CustomBottomSheet(
+               warehouse: selectedWarehouse,
+               isOpenNotifier: widget.isBottomSheetOpenNotifier,
+               onClose: () {
+                 widget.isBottomSheetOpenNotifier.value = false;
+                 homeVM.clearSelectedWarehouse();
+               },
+               onTap: () {
+                 Navigator.of(context).push(
+                   MaterialPageRoute(
+                     builder: (_) => WarehouseManagement(
+                       warehouse: selectedWarehouse,
+                     ),
+                   ),
+                 );
+               },
+             ),
+           ),
         ],
       ),
     );

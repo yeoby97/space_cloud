@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../data/warehouse.dart';
+import 'favorite/favorite_button.dart';
 import 'reservation_screen.dart';
 
 class CustomBottomSheet extends StatefulWidget {
@@ -183,15 +184,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                             onPressed: widget.onTap,
                             child: const Text('자세히 보기'),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              setState(() => _sheetHeight = 0);
-                              Future.delayed(const Duration(milliseconds: 500), () {
-                                if (mounted) widget.onClose();
-                              });
-                            },
-                          ),
+                          FavoriteButton(warehouse: widget.warehouse),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -277,4 +270,6 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
       ),
     );
   }
+
+
 }
