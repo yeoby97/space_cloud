@@ -27,17 +27,11 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => HomeViewModel()),
-        ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
-      ],
-      child: WillPopScope(
-        onWillPop: _onWillPop,
-        child: Scaffold(
-          body: _buildBody(),
-          floatingActionButton: _buildFloatingButton(),
-        ),
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        body: _buildBody(),
+        floatingActionButton: _buildFloatingButton(),
       ),
     );
   }
@@ -45,7 +39,13 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildBody() {
     switch (_currentIndex) {
       case 0:
-        return HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen);
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => HomeViewModel()),
+            ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
+          ],
+          child: HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
+        );
       case 1:
         return ChangeNotifierProvider(
           create: (_) => MyWarehouseViewModel(),
