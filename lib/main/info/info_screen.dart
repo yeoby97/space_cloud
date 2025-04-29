@@ -5,12 +5,15 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:space_cloud/data/user.dart';
 import 'package:space_cloud/main/info/phone_number_manager.dart';
 import 'package:space_cloud/main/info/profile_image_manager.dart';
 import 'package:space_cloud/sign/signout/signout_screen.dart';
 
 import '../../sign/signin/signin_screen.dart';
+import '../home/home_view_model.dart';
+import 'favorite_list_screen.dart';
 
 class InfoScreen extends StatefulWidget {
   const InfoScreen({super.key});
@@ -217,7 +220,16 @@ class _InfoScreenState extends State<InfoScreen> {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: GestureDetector(
-        onTap: () => debugPrint('$title 클릭됨'),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ChangeNotifierProvider.value(
+                value: context.read<HomeViewModel>(),
+                child: const FavoriteListScreen(),
+              ),
+            ),
+          );
+        },
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(

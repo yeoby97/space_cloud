@@ -7,7 +7,7 @@ import 'package:space_cloud/main/list/reservation_detail_screen.dart';
 
 class ListScreen extends StatefulWidget {
 
-  ListScreen({super.key});
+  const ListScreen({super.key});
 
   @override
   State<ListScreen> createState() => _ListScreen();

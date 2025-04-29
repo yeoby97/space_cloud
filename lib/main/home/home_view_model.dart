@@ -1,5 +1,3 @@
-// TODO : 최적화 및 상태 최상단화
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,6 +13,7 @@ class HomeViewModel extends ChangeNotifier {
   Warehouse? _selectedWarehouse;
   final Set<String> _favoriteWarehouseIds = {};
   final FavoriteService _favoriteService = FavoriteService();
+  final Map<MarkerId, Warehouse> _markerWarehouseMap = {};
 
   List<Marker> get markers => _markers;
   Warehouse? get selectedWarehouse => _selectedWarehouse;
@@ -35,19 +34,20 @@ class HomeViewModel extends ChangeNotifier {
         precacheImage(NetworkImage(warehouse.images.first), navigatorKey.currentContext!);
       }
 
+      final markerId = MarkerId(warehouse.id);
       final marker = Marker(
-        markerId: MarkerId(warehouse.id),
+        markerId: markerId,
         position: LatLng(warehouse.lat, warehouse.lng),
-        infoWindow: InfoWindow(title: warehouse.address),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         onTap: () {
-          _selectedWarehouse = warehouse;
+          _selectedWarehouse = _markerWarehouseMap[markerId];
           notifyListeners();
-          onTapWarehouse(warehouse);
+          onTapWarehouse(_selectedWarehouse!);
         },
       );
 
       _markers.add(marker);
+      _markerWarehouseMap[markerId] = warehouse;
+
     }
 
     notifyListeners();
@@ -90,5 +90,10 @@ class HomeViewModel extends ChangeNotifier {
       notifyListeners();
       await _favoriteService.addFavorite(user.uid, warehouse);
     }
+  }
+
+  Warehouse? getWarehouseById(String id) {
+    final markerId = MarkerId(id);
+    return _markerWarehouseMap[markerId];
   }
 }

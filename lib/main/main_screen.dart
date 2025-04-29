@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
@@ -10,8 +9,7 @@ import 'package:space_cloud/main/home/home_screen.dart';
 import 'package:space_cloud/main/list/list_screen.dart';
 import 'package:space_cloud/main/warehouse/my_warehouse_view_model.dart';
 import 'package:space_cloud/sign/signin/signin_screen.dart';
-import 'home/bottom_sheet/favorite/favorite_service.dart';
-import 'home/bottom_sheet/favorite/favorite_view_model.dart';
+
 import 'home/home_view_model.dart';
 import 'home/my_location/my_location_view_model.dart';
 
@@ -29,8 +27,11 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => MyLocationViewModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
+      ],
       child: WillPopScope(
         onWillPop: _onWillPop,
         child: Scaffold(
@@ -44,20 +45,14 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildBody() {
     switch (_currentIndex) {
       case 0:
-        return MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => HomeViewModel()),
-            ChangeNotifierProvider(create: (_) => FavoriteViewModel(favoriteService: FavoriteService())),
-          ],
-          child: HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
-        );
+        return HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen);
       case 1:
         return ChangeNotifierProvider(
           create: (_) => MyWarehouseViewModel(),
           child: const MyWarehouseScreen(),
         );
       case 2:
-        return ListScreen();
+        return const ListScreen();
       case 3:
         return const InfoScreen();
       default:
