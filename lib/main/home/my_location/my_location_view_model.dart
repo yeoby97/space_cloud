@@ -1,3 +1,5 @@
+// TODO : 최적화 및 상태 최상단화
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';

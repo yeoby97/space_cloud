@@ -1,3 +1,5 @@
+// TODO : 최적화 및 상태 최상단화
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
