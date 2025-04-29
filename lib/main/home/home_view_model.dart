@@ -1,3 +1,5 @@
+// TODO : 최적화 및 상태 최상단화
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../data/warehouse.dart';
 import '../home/bottom_sheet/favorite/favorite_service.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class HomeViewModel extends ChangeNotifier {
   final List<Marker> _markers = [];
@@ -26,6 +30,10 @@ class HomeViewModel extends ChangeNotifier {
     _markers.clear();
     for (var doc in snapshot.docs) {
       final warehouse = Warehouse.fromDoc(doc);
+
+      if (warehouse.images.isNotEmpty && navigatorKey.currentContext != null) {
+        precacheImage(NetworkImage(warehouse.images.first), navigatorKey.currentContext!);
+      }
 
       final marker = Marker(
         markerId: MarkerId(warehouse.id),

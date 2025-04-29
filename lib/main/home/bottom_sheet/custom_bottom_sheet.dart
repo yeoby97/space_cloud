@@ -1,6 +1,9 @@
+// TODO: 최적화 및 상태 최상단화
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../data/warehouse.dart';
 import 'favorite/favorite_button.dart';
@@ -26,34 +29,47 @@ class CustomBottomSheet extends StatefulWidget {
   State<CustomBottomSheet> createState() => _CustomBottomSheetState();
 }
 
-class _CustomBottomSheetState extends State<CustomBottomSheet> {
+class _CustomBottomSheetState extends State<CustomBottomSheet> with SingleTickerProviderStateMixin {
   double _sheetHeight = 300;
   final double _minHeight = 0;
   final double _maxHeight = 700;
   double _dragStart = 0;
 
-  final numberFormat = NumberFormat.decimalPattern();
-  Map<String, String> _spaceIdToDocId = {}; // spaceId → docId 매핑
+  late final NumberFormat numberFormat;
+  Map<String, String> _spaceIdToDocId = {};
+
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    numberFormat = NumberFormat.decimalPattern();
     widget.isOpenNotifier.addListener(_handleCloseSignal);
     if (widget.isInitial) {
       _sheetHeight = 0;
       Future.microtask(() => setState(() => _sheetHeight = 300));
     }
     _loadSpaces();
+
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
     widget.isOpenNotifier.removeListener(_handleCloseSignal);
+    _fadeController.dispose();
     super.dispose();
   }
 
   void _handleCloseSignal() {
     if (!widget.isOpenNotifier.value) {
+      _fadeController.reverse();
       setState(() => _sheetHeight = 0);
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) widget.onClose();
@@ -68,12 +84,13 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
         .collection('spaces')
         .get();
 
+    if (!mounted) return;
+
     final mapping = <String, String>{};
     for (var doc in snapshot.docs) {
       final spaceId = doc['spaceId'] ?? '';
       mapping[spaceId] = doc.id;
     }
-
     setState(() => _spaceIdToDocId = mapping);
   }
 
@@ -91,20 +108,16 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
 
   void _handleDragEnd(DragEndDetails details) {
     final velocity = details.velocity.pixelsPerSecond.dy;
-    if (_sheetHeight < 300) {
+    final midpoint = (_maxHeight + 300) / 2;
+
+    if (_sheetHeight < 300 || velocity > 800) {
+      _fadeController.reverse();
       setState(() => _sheetHeight = 0);
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) widget.onClose();
       });
     } else {
-      if (velocity > 0) {
-        setState(() => _sheetHeight = 300);
-      } else if (velocity < 0) {
-        setState(() => _sheetHeight = _maxHeight);
-      } else {
-        final midpoint = (_maxHeight + 300) / 2;
-        setState(() => _sheetHeight = _sheetHeight < midpoint ? 300 : _maxHeight);
-      }
+      setState(() => _sheetHeight = velocity < -800 || _sheetHeight > midpoint ? _maxHeight : 300);
     }
   }
 
@@ -130,74 +143,92 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
             ),
           ],
         ),
-        child: Offstage(
-          offstage: _sheetHeight == 0,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
           child: Column(
             children: [
-              GestureDetector(
-                onVerticalDragStart: _handleDragStart,
-                onVerticalDragUpdate: _handleDragUpdate,
-                onVerticalDragEnd: _handleDragEnd,
-                behavior: HitTestBehavior.translucent,
-                child: Container(
-                  height: 36,
-                  alignment: Alignment.center,
-                  child: Container(
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (widget.warehouse.images.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            widget.warehouse.images.first,
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      const SizedBox(height: 10),
-                      Text(widget.warehouse.address, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text(widget.warehouse.detailAddress),
-                      const SizedBox(height: 6),
-                      Text('가격: ${numberFormat.format(widget.warehouse.price)}원'),
-                      Text('보관 공간: ${numberFormat.format(widget.warehouse.count)}칸'),
-                      const SizedBox(height: 6),
-                      Text('등록일: ${widget.warehouse.createdAt?.toLocal().toString().split(' ').first ?? ''}'),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          ElevatedButton(
-                            onPressed: widget.onTap,
-                            child: const Text('자세히 보기'),
-                          ),
-                          FavoriteButton(warehouse: widget.warehouse),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Text("예약 가능한 공간", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 8),
-                      _buildSpaceGrid(),
-                    ],
-                  ),
-                ),
-              ),
+              _buildDragHandle(),
+              Expanded(child: _buildContent()),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDragHandle() {
+    return GestureDetector(
+      onVerticalDragStart: _handleDragStart,
+      onVerticalDragUpdate: _handleDragUpdate,
+      onVerticalDragEnd: _handleDragEnd,
+      behavior: HitTestBehavior.translucent,
+      child: Container(
+        height: 36,
+        alignment: Alignment.center,
+        child: Container(
+          width: 40,
+          height: 5,
+          decoration: BoxDecoration(
+            color: Colors.grey[400],
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    final warehouse = widget.warehouse;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (warehouse.images.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: CachedNetworkImage(
+                imageUrl: warehouse.images.first,
+                fit: BoxFit.cover,
+                height: 150,
+                width: double.infinity,
+                placeholder: (context, url) => Container(
+                  height: 150,
+                  color: Colors.grey[300],
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 150,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.error),
+                ),
+              ),
+            ),
+          const SizedBox(height: 10),
+          Text(warehouse.address, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(warehouse.detailAddress),
+          const SizedBox(height: 6),
+          Text('가격: ${numberFormat.format(warehouse.price)}원'),
+          Text('보관 공간: ${numberFormat.format(warehouse.count)}칸'),
+          const SizedBox(height: 6),
+          Text('등록일: ${warehouse.createdAt?.toLocal().toString().split(' ').first ?? ''}'),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ElevatedButton(
+                onPressed: widget.onTap,
+                child: const Text('자세히 보기'),
+              ),
+              FavoriteButton(warehouse: warehouse),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text('예약 가능한 공간', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          _buildSpaceGrid(),
+        ],
       ),
     );
   }
@@ -270,6 +301,4 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
       ),
     );
   }
-
-
 }
