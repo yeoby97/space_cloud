@@ -27,11 +27,28 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        body: _buildBody(),
-        floatingActionButton: _buildFloatingButton(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
+      ],
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) {
+            final navigator = Navigator.of(context);
+
+            _onWillPop().then((shouldPop) {
+              if (shouldPop) {
+                navigator.pop();
+              }
+            });
+          }
+        },
+        child: Scaffold(
+          body: _buildBody(),
+          floatingActionButton: _buildFloatingButton(),
+        ),
       ),
     );
   }
@@ -39,13 +56,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildBody() {
     switch (_currentIndex) {
       case 0:
-        return MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => HomeViewModel()),
-            ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
-          ],
-          child: HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen),
-        );
+        return HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen);
       case 1:
         return ChangeNotifierProvider(
           create: (_) => MyWarehouseViewModel(),

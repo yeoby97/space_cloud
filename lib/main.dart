@@ -1,8 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:location/location.dart';
+import 'package:provider/provider.dart';
 import 'package:space_cloud/main/main_screen.dart';
+import 'data/user_view_model.dart';
 import 'firebase/firebase_options.dart';
 
 void main() async {
@@ -12,9 +15,21 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await _initializePermissions();
 
+  final userVM = UserViewModel();
+  if (FirebaseAuth.instance.currentUser != null) {
+    await userVM.loadUser();
+  }
+
   FlutterNativeSplash.remove();
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<UserViewModel>.value(value: userVM),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
