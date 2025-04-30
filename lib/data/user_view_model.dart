@@ -21,6 +21,8 @@ class UserViewModel extends ChangeNotifier {
     if (doc.exists) {
       _appUser = AppUser.fromMap(doc.data()!);
       await RecentWarehouseManager.syncFromFirestore();
+      await RecentWarehouseManager.clearLocalRecentWarehouses();
+      await RecentWarehouseManager.syncFromFirestore();
     }
 
     _isLoading = false;

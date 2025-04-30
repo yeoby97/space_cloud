@@ -8,12 +8,10 @@ class RecentWarehouseManager {
   static const _key = 'recent_warehouses';
   static const _limit = 10;
 
-  // 최근 본 창고 추가
   static Future<void> addWarehouse(Warehouse warehouse) async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_key) ?? [];
 
-    // 기존에 있으면 제거하고 맨 앞으로
     list.removeWhere((item) => jsonDecode(item)['id'] == warehouse.id);
     list.insert(0, jsonEncode(warehouse.toJson()));
 
@@ -28,14 +26,12 @@ class RecentWarehouseManager {
     }
   }
 
-  // 로컬에서 불러오기
   static Future<List<Warehouse>> getLocalWarehouses() async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_key) ?? [];
     return list.map((e) => Warehouse.fromJson(jsonDecode(e))).toList();
   }
 
-  // Firestore에서 불러온 후 로컬 저장 (로그인 직후)
   static Future<void> syncFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -46,4 +42,10 @@ class RecentWarehouseManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_key, list);
   }
+
+  static Future<void> clearLocalRecentWarehouses() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('recent_warehouses');
+  }
+
 }

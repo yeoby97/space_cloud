@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // SystemNavigator 사용
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -35,15 +37,7 @@ class _MainScreenState extends State<MainScreen> {
       child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) {
-            final navigator = Navigator.of(context);
-
-            _onWillPop().then((shouldPop) {
-              if (shouldPop) {
-                navigator.pop();
-              }
-            });
-          }
+          if (!didPop) _handleBackPressed();
         },
         child: Scaffold(
           body: _buildBody(),
@@ -108,14 +102,14 @@ class _MainScreenState extends State<MainScreen> {
     setState(() => _currentIndex = index);
   }
 
-  Future<bool> _onWillPop() async {
+  Future<void> _handleBackPressed() async {
     if (_currentIndex != 0) {
       setState(() => _currentIndex = 0);
-      return false;
+      return;
     }
     if (_isBottomSheetOpen.value) {
       _isBottomSheetOpen.value = false;
-      return false;
+      return;
     }
 
     final now = DateTime.now();
@@ -126,8 +120,12 @@ class _MainScreenState extends State<MainScreen> {
           const SnackBar(content: Text('뒤로 버튼을 한 번 더 누르면 종료됩니다.')),
         );
       }
-      return false;
+    } else {
+      if (Platform.isAndroid) {
+        SystemNavigator.pop();
+      } else {
+        exit(0);
+      }
     }
-    return true;
   }
 }
