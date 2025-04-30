@@ -1,7 +1,4 @@
-// TODO : 최적화 및 상태 최상단화
-
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:space_cloud/main/home/my_location/my_location.dart';
@@ -12,13 +9,27 @@ class MyLocationViewModel extends ChangeNotifier {
   late final StreamSubscription<Position> _subscription;
 
   MyLocationViewModel() {
+    _initialize();
+  }
+
+  Position? get currentPosition => _currentPosition;
+
+  Future<void> _initialize() async {
+    // 앱 시작 시 최초 위치 가져오기
+    try {
+      _currentPosition = await Geolocator.getCurrentPosition();
+    } catch (e) {
+      print("초기 위치 가져오기 실패: $e");
+    }
+
+    // 위치 스트림 구독
     _subscription = _myLocation.positionStream.listen((position) {
       _currentPosition = position;
       notifyListeners();
     });
-  }
 
-  Position? get currentPosition => _currentPosition;
+    notifyListeners(); // 초기 위치 반영
+  }
 
   @override
   void dispose() {
