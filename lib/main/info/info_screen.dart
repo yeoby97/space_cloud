@@ -106,7 +106,6 @@ class InfoScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const SignInScreen()),
           );
           if (result == true) {
-            // context 사용을 안전하게 처리
             if (context.mounted) {
               context.read<UserViewModel>().loadUser();
             }
@@ -145,21 +144,19 @@ class InfoScreen extends StatelessWidget {
             const Icon(Icons.phone, size: 24, color: Colors.black54),
             const SizedBox(width: 12),
             Expanded(
-              child: Align(
+              child: Container(
                 alignment: Alignment.centerLeft,
-                child: (user == null || appUser == null)
-                    ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : Text(
-                  PhoneNumberManager.formatPhoneNumber(appUser.phoneNumber),
+                constraints: const BoxConstraints(minHeight: 50),
+                child: Text(
+                  (user == null || appUser == null)
+                      ? '로그인 후 이용해주세요.'
+                      : PhoneNumberManager.formatPhoneNumber(appUser.phoneNumber),
                   style: const TextStyle(fontSize: 16),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
+
             const SizedBox(width: 10),
             if (user != null && appUser != null)
               ElevatedButton.icon(
