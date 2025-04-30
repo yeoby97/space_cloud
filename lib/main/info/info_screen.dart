@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:space_cloud/main/info/phone_number_manager.dart';
 import 'package:space_cloud/main/info/profile_image_manager.dart';
+import 'package:space_cloud/main/info/recent_warehouse_list/recent_list_screen.dart';
 import 'package:space_cloud/sign/signout/signout_screen.dart';
 
 import '../../data/user.dart';
@@ -188,8 +189,8 @@ class InfoScreen extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          _buildMenuItem(context, '찜한 창고'),
-          _buildMenuItem(context, '최근 본 창고'),
+          _buildFavoriteList(context),
+          _buildRecentList(context),
           const Divider(indent: 20, endIndent: 20),
           const Spacer(),
           _buildSignOut(context),
@@ -198,7 +199,7 @@ class InfoScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, String title) {
+  Widget _buildFavoriteList(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: GestureDetector(
@@ -221,7 +222,39 @@ class InfoScreen extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(fontSize: 20)),
+              Text('찜한 창고', style: const TextStyle(fontSize: 20)),
+              const Icon(Icons.arrow_forward_ios_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentList(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ChangeNotifierProvider.value(
+                value: context.read<HomeViewModel>(),
+                child: const RecentListScreen(),
+              ),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.transparent,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('최근 본 창고', style: const TextStyle(fontSize: 20)),
               const Icon(Icons.arrow_forward_ios_rounded),
             ],
           ),

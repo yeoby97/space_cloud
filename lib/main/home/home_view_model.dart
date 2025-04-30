@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../data/warehouse.dart';
 import '../home/bottom_sheet/favorite/favorite_service.dart';
+import '../info/recent_warehouse_list/recent_warehouse_manager.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -41,15 +42,13 @@ class HomeViewModel extends ChangeNotifier {
         onTap: () {
           _selectedWarehouse = _markerWarehouseMap[markerId];
           notifyListeners();
+          RecentWarehouseManager.addWarehouse(warehouse);
           onTapWarehouse(_selectedWarehouse!);
         },
       );
-
       _markers.add(marker);
       _markerWarehouseMap[markerId] = warehouse;
-
     }
-
     notifyListeners();
   }
 

@@ -59,4 +59,40 @@ class Warehouse {
       'layout': layout,
     };
   }
+
+  factory Warehouse.fromJson(Map<String, dynamic> json) {
+    return Warehouse(
+      id: json['id'] ?? '',
+      address: json['address'] ?? '',
+      detailAddress: json['detailAddress'] ?? '',
+      price: json['price'] ?? 0,
+      count: json['count'] ?? 0,
+      images: List<String>.from(json['images'] ?? []),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'])
+          : null,
+      layout: Map<String, dynamic>.from(json['layout'] ?? {}),
+      lat: (json['lat'] as num?)?.toDouble() ?? 0.0,
+      lng: (json['lng'] as num?)?.toDouble() ?? 0.0,
+      ownerId: json['ownerId'] ?? '',
+    );
+  }
+
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'address': address,
+      'detailAddress': detailAddress,
+      'price': price,
+      'count': count,
+      'images': images,
+      'createdAt': createdAt?.toIso8601String(),
+      'layout': layout,
+      'lat': lat,
+      'lng': lng,
+      'ownerId': ownerId,
+    };
+  }
+
 }
