@@ -5,6 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 import 'package:space_cloud/main/main_screen.dart';
+import 'package:space_cloud/main/home/home_view_model.dart';
+import 'package:space_cloud/main/home/my_location/my_location_view_model.dart';
 import 'data/user_view_model.dart';
 import 'firebase/firebase_options.dart';
 
@@ -26,6 +28,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider<UserViewModel>.value(value: userVM),
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
       ],
       child: const MyApp(),
     ),
@@ -40,7 +44,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(scaffoldBackgroundColor: Colors.white),
       debugShowCheckedModeBanner: false,
-      home: MainScreen(),
+      home: const MainScreen(),
     );
   }
 }
