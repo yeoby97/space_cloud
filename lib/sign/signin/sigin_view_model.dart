@@ -27,10 +27,7 @@ class SignInViewModel extends ChangeNotifier {
     _setLoading(true);
     try {
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        _setLoading(false);
-        return false;
-      }
+      if (googleUser == null) return _finish(false);
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -40,18 +37,12 @@ class SignInViewModel extends ChangeNotifier {
 
       final userCredential = await _auth.signInWithCredential(credential);
       final firebaseUser = userCredential.user;
-
-      if (firebaseUser == null) {
-        _setLoading(false);
-        return false;
-      }
+      if (firebaseUser == null) return _finish(false);
 
       await _createUserIfNeeded(firebaseUser);
-      _setLoading(false);
-      return true;
+      return _finish(true);
     } catch (e) {
-      _setError('로그인 실패: $e');
-      return false;
+      return _setError('로그인 실패: $e');
     }
   }
 
@@ -76,9 +67,17 @@ class SignInViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setError(String message) {
+  bool _finish(bool result) {
+    _isLoading = false;
+    notifyListeners();
+    return result;
+  }
+
+  bool _setError(String message) {
     _error = message;
     _isLoading = false;
     notifyListeners();
+    return false;
   }
 }
+
