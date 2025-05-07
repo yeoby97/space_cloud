@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          position == null ? const Center(child: CircularProgressIndicator()) : _buildGoogleMap(position, homeVM),
+          position == null ? const Center(child: CircularProgressIndicator()) : _buildNaverMap(position, homeVM),
           _buildSearchBox(),
           SafeArea(child: _buildLocationButton()),
           if (selectedWarehouse != null)
