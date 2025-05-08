@@ -15,38 +15,50 @@ void main() async {
   WidgetsBinding binding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: binding);
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  await FlutterNaverMap().init(
-      clientId: 'lo0sa9igjt',
-      onAuthFailed: (ex) => switch (ex) {
-        NQuotaExceededException(:final message) =>
-            print("사용량 초과 (message: $message)"),
-        NUnauthorizedClientException() ||
-        NClientUnspecifiedException() ||
-        NAnotherAuthFailedException() =>
-            print("인증 실패: $ex"),
-      });
-
-  await _initializePermissions();
-
-  final userVM = UserViewModel();
-  if (FirebaseAuth.instance.currentUser != null) {
-    await userVM.loadUser();
-  }
+  await _initializeApp();
 
   FlutterNativeSplash.remove();
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<UserViewModel>.value(value: userVM),
-        ChangeNotifierProvider(create: (_) => HomeViewModel()),
-        ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
-      ],
-      child: const MyApp(),
-    ),
+  runApp(const MyApp());
+}
+
+Future<void> _initializeApp() async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await FlutterNaverMap().init(
+    clientId: 'lo0sa9igjt',
+    onAuthFailed: (ex) => switch (ex) {
+      NQuotaExceededException(:final message) =>
+          print("Naver Map 사용량 초과: $message"),
+      NUnauthorizedClientException() ||
+      NClientUnspecifiedException() ||
+      NAnotherAuthFailedException() =>
+          print("Naver Map 인증 실패: $ex"),
+    },
   );
+
+  await _initializeLocationPermission();
+}
+
+Future<void> _initializeLocationPermission() async {
+  final location = Location();
+
+  bool serviceEnabled = await location.serviceEnabled();
+  if (!serviceEnabled) {
+    serviceEnabled = await location.requestService();
+    if (!serviceEnabled) {
+      debugPrint('위치 서비스가 비활성화되어 있습니다.');
+      return;
+    }
+  }
+
+  PermissionStatus permission = await location.hasPermission();
+  if (permission == PermissionStatus.denied) {
+    permission = await location.requestPermission();
+    if (permission != PermissionStatus.granted) {
+      debugPrint('위치 권한이 거부되었습니다.');
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -54,25 +66,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(scaffoldBackgroundColor: Colors.white),
-      debugShowCheckedModeBanner: false,
-      home: const MainScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserViewModel()..loadIfSignedIn()),
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
+      ],
+      child: MaterialApp(
+        theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
+          useMaterial3: true,
+        ),
+        debugShowCheckedModeBanner: false,
+        home: const MainScreen(),
+      ),
     );
   }
 }
 
-Future<void> _initializePermissions() async {
-  final location = Location();
-
-  bool serviceEnabled = await location.serviceEnabled();
-  if (!serviceEnabled) {
-    serviceEnabled = await location.requestService();
-    if (!serviceEnabled) return;
-  }
-
-  PermissionStatus permission = await location.hasPermission();
-  if (permission == PermissionStatus.denied) {
-    permission = await location.requestPermission();
+extension on UserViewModel {
+  Future<void> loadIfSignedIn() async {
+    if (FirebaseAuth.instance.currentUser != null) {
+      await loadUser();
+    }
   }
 }
