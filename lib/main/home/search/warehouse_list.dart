@@ -1,7 +1,7 @@
 // TODO : 최적화 및 상태 최상단화
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 class WarehouseList extends StatelessWidget {
   final List<Map<String, dynamic>> warehouses;
@@ -43,11 +43,11 @@ class WarehouseList extends StatelessWidget {
                 final distanceKm = (warehouse['distance'] / 1000).toStringAsFixed(2);
                 return ListTile(
                   leading: const Icon(Icons.warehouse),
-                  title: Text(warehouse['name']),
+                  title: Text(warehouse['name'] ?? ''),
                   subtitle: Text("$distanceKm km 거리"),
                   onTap: () {
                     Navigator.of(context).pop({
-                      'location': warehouse['latLng'] as LatLng,
+                      'location': NLatLng(warehouse['lat'], warehouse['lng']),
                       'address': warehouse['name'],
                     });
                   },

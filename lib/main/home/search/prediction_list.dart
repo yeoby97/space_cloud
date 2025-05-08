@@ -1,48 +1,55 @@
-// TODO : 최적화 및 상태 최상단화
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:http/http.dart' as http;
 
 class PredictionList extends StatelessWidget {
-  final List<Prediction> predictions;
-  final GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: "AIzaSyAuhd1aQTSgjtgnydP3_wgD3SDD2QD-VGU");
-  PredictionList({super.key, required this.predictions});
+  final List<Map<String, dynamic>> predictions;
+
+  const PredictionList({super.key, required this.predictions});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: ListView.separated(
-        itemCount: predictions.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final prediction = predictions[index];
-          return ListTile(
-            leading: const Icon(Icons.location_on),
-            title: Text(prediction.description ?? ""),
-            onTap: () async {
-              LatLng? location = await getLatLngFromPrediction(prediction);
+    if (predictions.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: predictions.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final prediction = predictions[index];
+        final title = prediction['title']?.toString() ?? '';
+        final address = prediction['address']?.toString() ?? '';
+        final mapx = prediction['mapx'] as double? ?? 0.0;
+        final mapy = prediction['mapy'] as double? ?? 0.0;
+
+        return ListTile(
+          leading: const Icon(Icons.location_on),
+          title: Text(title.isNotEmpty ? title : address),
+          onTap: () async {
+            final coord = await convertTM128toWGS84(mapx, mapy);
+            if (coord != null) {
               Navigator.of(context).pop({
-                'placeId': prediction.placeId,
-                'address': prediction.description,
-                'location': location,
+                'address': address,
+                'location': NLatLng(coord['lat']!, coord['lng']!),
               });
-            },
-          );
-        },
-      ),
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('좌표를 변환할 수 없습니다.')),
+              );
+            }
+          },
+        );
+      },
     );
   }
 
-  Future<LatLng?> getLatLngFromPrediction(Prediction prediction) async {
-    final detail = await _places.getDetailsByPlaceId(prediction.placeId!);
-    if (detail.isOkay) {
-      final location = detail.result.geometry?.location;
-      if (location != null) {
-        return LatLng(location.lat, location.lng);
-      }
-    }
-    return null;
+  Map<String, double> convertTM128toWGS84(double mapx, double mapy) {
+    final lng = 1e-7 * mapx;
+    final lat = 1e-7 * mapy;
+    return {'lat': lat, 'lng': lng};
   }
 }
