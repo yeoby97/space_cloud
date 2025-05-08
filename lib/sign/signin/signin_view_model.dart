@@ -24,7 +24,6 @@ class SignInViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  /// 구글 로그인 및 사용자 정보 등록
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
 
@@ -59,7 +58,6 @@ class SignInViewModel extends ChangeNotifier {
     }
   }
 
-  /// 사용자 Firestore 문서 존재 확인 후 생성 / 권한 확인
   Future<bool> _createUserIfNeededAndCheckManagement(User user) async {
     final docRef = _firestore.collection('users').doc(user.uid);
     final doc = await docRef.get();
