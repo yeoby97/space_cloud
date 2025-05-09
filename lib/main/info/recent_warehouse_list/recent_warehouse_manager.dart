@@ -32,13 +32,20 @@ class RecentWarehouseManager {
     return list.map((e) => Warehouse.fromJson(jsonDecode(e))).toList();
   }
 
+  // static메소드 - 별도의 인스턴스 없이 활용가능
   static Future<void> syncFromFirestore() async {
+    // 현제 유저 가져옴
     final user = FirebaseAuth.instance.currentUser;
+    // 유저가 없다면 리턴
     if (user == null) return;
 
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    final list = List<String>.from(doc.data()?['recentWarehouses'] ?? []);
+    // 여기서부터 유저 존재
 
+    // 유저의 문서를 가져옴
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    // recentWarehouses 필드 list에 담음, 없으면 빈 리스트
+    final list = List<String>.from(doc.data()?['recentWarehouses'] ?? []);
+    //
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_key, list);
   }
@@ -46,6 +53,7 @@ class RecentWarehouseManager {
   static Future<void> clearLocalRecentWarehouses() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('recent_warehouses');
+
   }
 
 }

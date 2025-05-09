@@ -1,4 +1,4 @@
-// TODO: 최적화 및 상태 최상단화
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -23,7 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   GoogleMapController? _mapController;
-  NaverMapController? _nMapController;
+  // NaverMapController? _nMapController;
   @override
   void initState() {
     super.initState();
@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _mapController?.dispose();
-    _nMapController?.dispose();
+    // _nMapController?.dispose();
     super.dispose();
   }
 
@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          position == null ? const Center(child: CircularProgressIndicator()) : _buildNaverMap(position, homeVM),
+          position == null ? const Center(child: CircularProgressIndicator()) : _buildGoogleMap(position, homeVM),
           _buildSearchBox(),
           SafeArea(child: _buildLocationButton()),
           if (selectedWarehouse != null)
@@ -71,21 +71,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  _buildNaverMap(Position position, HomeViewModel homeVM) {
-    return NaverMap(
-      options: NaverMapViewOptions(
-        initialCameraPosition: NCameraPosition(
-            target: NLatLng(position.latitude, position.longitude),
-            zoom: 16,
-        ),
-      ),
-      onMapReady: (controller) async{
-        _nMapController ??= controller;
-        _nMapController?.addOverlayAll(Set<NMarker>.from(homeVM.nMarkers));
-        await _nMapController?.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-      },
-    );
-  }
+  // _buildNaverMap(Position position, HomeViewModel homeVM) {
+  //   return NaverMap(
+  //     options: NaverMapViewOptions(
+  //       initialCameraPosition: NCameraPosition(
+  //           target: NLatLng(position.latitude, position.longitude),
+  //           zoom: 16,
+  //       ),
+  //     ),
+  //     onMapReady: (controller) async{
+  //       _nMapController ??= controller;
+  //       _nMapController?.addOverlayAll(Set<NMarker>.from(homeVM.nMarkers));
+  //       await _nMapController?.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+  //     },
+  //   );
+  // }
 
   Widget _buildGoogleMap(Position position, HomeViewModel homeVM) {
     return GoogleMap(
@@ -117,11 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-<<<<<<< HEAD
-                    color: Colors.black.withAlpha(51),
-=======
                     color: Colors.black.withOpacity(0.2),
->>>>>>> parent of e113668 (home_screen.dart 정상화)
                     blurRadius: 10,
                     spreadRadius: 2,
                     offset: const Offset(3, 3),
@@ -185,12 +181,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-    _nMapController?.updateCamera(
-      NCameraUpdate.withParams(
-        target: NLatLng(position.latitude, position.longitude),
-        zoom: 16,
-      ),
-    );
+    // _nMapController?.updateCamera(
+    //   NCameraUpdate.withParams(
+    //     target: NLatLng(position.latitude, position.longitude),
+    //     zoom: 16,
+    //   ),
+    // );
   }
 
   Future<void> _onSearchTap() async {
@@ -205,9 +201,9 @@ class _HomeScreenState extends State<HomeScreen> {
           CameraPosition(target: location, zoom: 16),
         ),
       );
-      _nMapController?.updateCamera(
-        NCameraUpdate.withParams(target: NLatLng(location.latitude, location.longitude), zoom: 16),
-      );
+      // _nMapController?.updateCamera(
+      //   NCameraUpdate.withParams(target: NLatLng(location.latitude, location.longitude), zoom: 16),
+      // );
     }
   }
 

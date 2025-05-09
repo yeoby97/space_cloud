@@ -13,7 +13,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 class HomeViewModel extends ChangeNotifier {
   final List<Marker> _markers = [];
 
-  final List<NMarker> _nMarkers = [];
+  // final List<NMarker> _nMarkers = [];
 
   Warehouse? _selectedWarehouse;
   final Set<String> _favoriteWarehouseIds = {};
@@ -21,7 +21,7 @@ class HomeViewModel extends ChangeNotifier {
   final Map<MarkerId, Warehouse> _markerWarehouseMap = {};
 
   List<Marker> get markers => _markers;
-  List<NMarker> get nMarkers => _nMarkers;
+  // List<NMarker> get nMarkers => _nMarkers;
   Warehouse? get selectedWarehouse => _selectedWarehouse;
   Set<String> get favoriteWarehouseIds => _favoriteWarehouseIds;
 
@@ -33,7 +33,7 @@ class HomeViewModel extends ChangeNotifier {
     final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
 
     _markers.clear();
-    _nMarkers.clear();
+    // _nMarkers.clear();
 
     for (var doc in snapshot.docs) {
       final warehouse = Warehouse.fromDoc(doc);
@@ -66,7 +66,7 @@ class HomeViewModel extends ChangeNotifier {
       });
 
       _markers.add(marker);
-      _nMarkers.add(nMarker);
+      // _nMarkers.add(nMarker);
 
       _markerWarehouseMap[markerId] = warehouse;
     }
@@ -80,7 +80,7 @@ class HomeViewModel extends ChangeNotifier {
 
   void clearMarkers() {
     _markers.clear();
-    _nMarkers.clear();
+    // _nMarkers.clear();
     notifyListeners();
   }
 

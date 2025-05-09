@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -49,6 +46,16 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyALAeNeYuXq18KhRlOXP6WJ5O1kEbLysoU',
+    appId: '1:1094957991619:web:27cf05a4aec4b0d7584476',
+    messagingSenderId: '1094957991619',
+    projectId: 'spacecloud-5dde5',
+    authDomain: 'spacecloud-5dde5.firebaseapp.com',
+    storageBucket: 'spacecloud-5dde5.firebasestorage.app',
+    measurementId: 'G-KEDXPW1N39',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCAnWXYDvZQdH_TAbd834KvJ9vnpXLLk64',
     appId: '1:1094957991619:android:89c17594dc4322a6584476',
@@ -63,6 +70,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1094957991619',
     projectId: 'spacecloud-5dde5',
     storageBucket: 'spacecloud-5dde5.firebasestorage.app',
+    androidClientId: '1094957991619-1f7gs03uaduiq8ch0mfsj798kiqm1v0u.apps.googleusercontent.com',
+    iosClientId: '1094957991619-220vkdl1r55a9b2gqhl5u2csomd2f54d.apps.googleusercontent.com',
     iosBundleId: 'com.example.spaceCloud',
   );
 }
