@@ -26,13 +26,29 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   DateTime? _lastBackPressed;
   final ValueNotifier<bool> _isBottomSheetOpen = ValueNotifier(false);
+  late final HomeViewModel _homeViewModel;
+  late final MyLocationViewModel _locationViewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _homeViewModel = HomeViewModel();
+    _locationViewModel = MyLocationViewModel();
+  }
+
+  @override
+  void dispose() {
+    _homeViewModel.dispose();
+    _locationViewModel.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => HomeViewModel()),
-        ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
+        ChangeNotifierProvider.value(value: _homeViewModel),
+        ChangeNotifierProvider.value(value: _locationViewModel),
       ],
       child: PopScope(
         canPop: false,
@@ -95,14 +111,14 @@ class _MainScreenState extends State<MainScreen> {
     if (index == 2 && user == null) {
       final result = await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const SignInScreen()),
+        MaterialPageRoute(builder: (context) => const SignInScreen()),
       );
       if (result == null) return;
     }
-    if (mounted) setState(() => _currentIndex = index);
+    setState(() => _currentIndex = index);
   }
 
-  void _handleBackPressed() {
+  Future<void> _handleBackPressed() async {
     if (_currentIndex != 0) {
       setState(() => _currentIndex = 0);
       return;
