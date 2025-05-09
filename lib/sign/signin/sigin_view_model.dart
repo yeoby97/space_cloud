@@ -5,7 +5,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../data/user.dart';
 
 class SignInViewModel extends ChangeNotifier {
-
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final GoogleSignIn _googleSignIn;
@@ -24,8 +23,6 @@ class SignInViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // 구글 로그인 메소드
-  //
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
     try {
@@ -42,15 +39,14 @@ class SignInViewModel extends ChangeNotifier {
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) return _finish(false);
 
-      bool check = await _createUserIfNeededAndCheckManagement(firebaseUser);
-
+      await _createUserIfNeeded(firebaseUser);
       return _finish(true);
     } catch (e) {
       return _setError('로그인 실패: $e');
     }
   }
 
-  Future<bool> _createUserIfNeededAndCheckManagement(User user) async {
+  Future<void> _createUserIfNeeded(User user) async {
     final docRef = _firestore.collection('users').doc(user.uid);
     final doc = await docRef.get();
 
@@ -61,14 +57,8 @@ class SignInViewModel extends ChangeNotifier {
         displayName: user.displayName ?? '사용자',
         photoURL: user.photoURL ?? '',
         phoneNumber: user.phoneNumber ?? '01012345678',
-        type: 'user',
       );
       await docRef.set(newUser.toMap());
-      return false;
-    }
-    else{
-      final userData = AppUser.fromMap(doc.data() as Map<String, dynamic>);
-      return userData.type == 'management';
     }
   }
 
