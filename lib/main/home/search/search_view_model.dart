@@ -4,9 +4,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 class SearchViewModel extends ChangeNotifier {
   final String _clientId;
@@ -82,7 +82,7 @@ class SearchViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _fetchWarehousesNearby(NLatLng base) async {
+  Future<void> _fetchWarehousesNearby(LatLng base) async {
     final snapshot =
     await FirebaseFirestore.instance.collection('warehouse').get();
 
@@ -102,7 +102,7 @@ class SearchViewModel extends ChangeNotifier {
       return {
         'name': data['address'] ?? doc.id,
         'distance': distance,
-        'latLng': NLatLng(data['lat'], data['lng']),
+        'latLng': LatLng(data['lat'], data['lng']),
       };
     }).whereType<Map<String, dynamic>>().toList();
 
@@ -110,7 +110,7 @@ class SearchViewModel extends ChangeNotifier {
     nearbyPlaces = filtered;
   }
 
-  Future<NLatLng?> _getCurrentLocation() async {
+  Future<LatLng?> _getCurrentLocation() async {
     final permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
@@ -122,7 +122,7 @@ class SearchViewModel extends ChangeNotifier {
     }
 
     final pos = await Geolocator.getCurrentPosition();
-    return NLatLng(pos.latitude, pos.longitude);
+    return LatLng(pos.latitude, pos.longitude);
   }
 
   void disposeDebounce() {

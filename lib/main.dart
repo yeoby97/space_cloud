@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 import 'package:space_cloud/main/main_screen.dart';
@@ -24,17 +23,6 @@ void main() async {
 
   // 파이어베이스 초기화 - 파이어베이스 사용시 필수
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // await FlutterNaverMap().init(
-  //     clientId: 'lo0sa9igjt',
-  //     onAuthFailed: (ex) => switch (ex) {
-  //       NQuotaExceededException(:final message) =>
-  //           print("사용량 초과 (message: $message)"),
-  //       NUnauthorizedClientException() ||
-  //       NClientUnspecifiedException() ||
-  //       NAnotherAuthFailedException() =>
-  //           print("인증 실패: $ex"),
-  //     });
 
   // 초기 위치 권한 설정
   await _initializePermissions();

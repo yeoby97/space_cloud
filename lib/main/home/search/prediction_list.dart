@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import 'package:http/http.dart' as http;
 
 class PredictionList extends StatelessWidget {
@@ -34,7 +35,7 @@ class PredictionList extends StatelessWidget {
             if (coord != null) {
               Navigator.of(context).pop({
                 'address': address,
-                'location': NLatLng(coord['lat']!, coord['lng']!),
+                'location': LatLng(coord['lat']!, coord['lng']!),
               });
             } else {
               ScaffoldMessenger.of(context).showSnackBar(

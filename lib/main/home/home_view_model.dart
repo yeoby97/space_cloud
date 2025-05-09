@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
+
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,7 +33,7 @@ class HomeViewModel extends ChangeNotifier {
     final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
 
     _markers.clear();
-    // _nMarkers.clear();
+
 
     for (var doc in snapshot.docs) {
       final warehouse = Warehouse.fromDoc(doc);
@@ -54,19 +54,9 @@ class HomeViewModel extends ChangeNotifier {
         },
       );
 
-      final nMarker = NMarker(
-        id: warehouse.id,
-        position: NLatLng(warehouse.lat, warehouse.lng),
-      );
-      nMarker.setOnTapListener((NMarker marker) {
-        _selectedWarehouse = _markerWarehouseMap[markerId];
-        notifyListeners();
-        RecentWarehouseManager.addWarehouse(warehouse);
-        onTapWarehouse(_selectedWarehouse!);
-      });
 
       _markers.add(marker);
-      // _nMarkers.add(nMarker);
+
 
       _markerWarehouseMap[markerId] = warehouse;
     }
@@ -80,7 +70,7 @@ class HomeViewModel extends ChangeNotifier {
 
   void clearMarkers() {
     _markers.clear();
-    // _nMarkers.clear();
+
     notifyListeners();
   }
 

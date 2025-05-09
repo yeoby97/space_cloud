@@ -1,7 +1,6 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -23,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   GoogleMapController? _mapController;
-  // NaverMapController? _nMapController;
   @override
   void initState() {
     super.initState();
@@ -39,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _mapController?.dispose();
-    // _nMapController?.dispose();
     super.dispose();
   }
 
@@ -70,22 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // _buildNaverMap(Position position, HomeViewModel homeVM) {
-  //   return NaverMap(
-  //     options: NaverMapViewOptions(
-  //       initialCameraPosition: NCameraPosition(
-  //           target: NLatLng(position.latitude, position.longitude),
-  //           zoom: 16,
-  //       ),
-  //     ),
-  //     onMapReady: (controller) async{
-  //       _nMapController ??= controller;
-  //       _nMapController?.addOverlayAll(Set<NMarker>.from(homeVM.nMarkers));
-  //       await _nMapController?.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-  //     },
-  //   );
-  // }
 
   Widget _buildGoogleMap(Position position, HomeViewModel homeVM) {
     return GoogleMap(
