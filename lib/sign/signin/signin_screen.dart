@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:space_cloud/sign/signin/signin_view_model.dart';
+import 'package:space_cloud/sign/signin/sigin_view_model.dart';
 
 import '../signup/signup_screen.dart';
 

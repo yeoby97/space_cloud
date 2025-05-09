@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
 import '../../data/user.dart';
 
 class SignInViewModel extends ChangeNotifier {
+
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final GoogleSignIn _googleSignIn;
@@ -24,16 +24,13 @@ class SignInViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  /// 구글 로그인 및 사용자 정보 등록
+  // 구글 로그인 메소드
+  //
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
-
     try {
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        _setLoading(false);
-        return false;
-      }
+      if (googleUser == null) return _finish(false);
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -43,23 +40,16 @@ class SignInViewModel extends ChangeNotifier {
 
       final userCredential = await _auth.signInWithCredential(credential);
       final firebaseUser = userCredential.user;
+      if (firebaseUser == null) return _finish(false);
 
-      if (firebaseUser == null) {
-        _setLoading(false);
-        return false;
-      }
+      bool check = await _createUserIfNeededAndCheckManagement(firebaseUser);
 
-      final isManager = await _createUserIfNeededAndCheckManagement(firebaseUser);
-
-      _setLoading(false);
-      return isManager;
-
+      return _finish(true);
     } catch (e) {
       return _setError('로그인 실패: $e');
     }
   }
 
-  /// 사용자 Firestore 문서 존재 확인 후 생성 / 권한 확인
   Future<bool> _createUserIfNeededAndCheckManagement(User user) async {
     final docRef = _firestore.collection('users').doc(user.uid);
     final doc = await docRef.get();
@@ -75,7 +65,8 @@ class SignInViewModel extends ChangeNotifier {
       );
       await docRef.set(newUser.toMap());
       return false;
-    } else {
+    }
+    else{
       final userData = AppUser.fromMap(doc.data() as Map<String, dynamic>);
       return userData.type == 'management';
     }
@@ -86,15 +77,17 @@ class SignInViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _finish(bool result) {
+    _isLoading = false;
+    notifyListeners();
+    return result;
+  }
+
   bool _setError(String message) {
     _error = message;
     _isLoading = false;
     notifyListeners();
     return false;
   }
-
-  void clearError() {
-    _error = null;
-    notifyListeners();
-  }
 }
+
