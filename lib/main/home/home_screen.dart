@@ -1,8 +1,10 @@
+// TODO: 최적화 및 상태 최상단화
+
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-
 import 'package:space_cloud/main/home/bottom_sheet/custom_bottom_sheet.dart';
 import 'package:space_cloud/main/home/home_view_model.dart';
 import 'package:space_cloud/main/home/my_location/my_location_view_model.dart';
@@ -13,7 +15,6 @@ import '../../data/warehouse.dart';
 
 class HomeScreen extends StatefulWidget {
   final ValueNotifier<bool> isBottomSheetOpenNotifier;
-
   const HomeScreen({super.key, required this.isBottomSheetOpenNotifier});
 
   @override
@@ -21,8 +22,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  GoogleMapController? _mapController;
   NaverMapController? _nMapController;
-
   @override
   void initState() {
     super.initState();
@@ -37,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _mapController?.dispose();
     _nMapController?.dispose();
     super.dispose();
   }
@@ -48,16 +50,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final position = locationVM.currentPosition;
     final selectedWarehouse = homeVM.selectedWarehouse;
 
-    if (position == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       body: Stack(
         children: [
-          _buildNaverMap(position, homeVM),
+          position == null ? const Center(child: CircularProgressIndicator()) : _buildNaverMap(position, homeVM),
           _buildSearchBox(),
           SafeArea(child: _buildLocationButton()),
           if (selectedWarehouse != null)
@@ -75,19 +71,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNaverMap(Position position, HomeViewModel homeVM) {
+  _buildNaverMap(Position position, HomeViewModel homeVM) {
     return NaverMap(
       options: NaverMapViewOptions(
         initialCameraPosition: NCameraPosition(
-          target: NLatLng(position.latitude, position.longitude),
-          zoom: 16,
+            target: NLatLng(position.latitude, position.longitude),
+            zoom: 16,
         ),
       ),
-      onMapReady: (controller) async {
+      onMapReady: (controller) async{
         _nMapController ??= controller;
         _nMapController?.addOverlayAll(Set<NMarker>.from(homeVM.nMarkers));
         await _nMapController?.setLocationTrackingMode(NLocationTrackingMode.noFollow);
       },
+    );
+  }
+
+  Widget _buildGoogleMap(Position position, HomeViewModel homeVM) {
+    return GoogleMap(
+      mapToolbarEnabled: false,
+      zoomControlsEnabled: false,
+      myLocationEnabled: true,
+      myLocationButtonEnabled: false,
+      initialCameraPosition: CameraPosition(
+        target: LatLng(position.latitude, position.longitude),
+        zoom: 16,
+      ),
+      onMapCreated: (controller) => _mapController ??= controller,
+      markers: Set<Marker>.from(homeVM.markers),
     );
   }
 
@@ -100,33 +111,43 @@ class _HomeScreenState extends State<HomeScreen> {
           child: GestureDetector(
             onTap: _onSearchTap,
             child: Container(
+              width: double.infinity,
               height: 60,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
+<<<<<<< HEAD
                     color: Colors.black.withAlpha(51),
+=======
+                    color: Colors.black.withOpacity(0.2),
+>>>>>>> parent of e113668 (home_screen.dart 정상화)
                     blurRadius: 10,
                     spreadRadius: 2,
                     offset: const Offset(3, 3),
                   ),
                 ],
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.0),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: const Row(
-                children: [
-                  Icon(Icons.map),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '장소나 위치를 검색하세요.',
-                      style: TextStyle(color: Colors.black45, fontSize: 15),
-                      overflow: TextOverflow.ellipsis,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.map),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '장소나 위치를 검색하세요.',
+                        style: TextStyle(
+                          color: Colors.black45,
+                          fontSize: 15,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  Icon(Icons.search),
-                ],
+                    Icon(Icons.search),
+                  ],
+                ),
               ),
             ),
           ),
@@ -156,6 +177,14 @@ class _HomeScreenState extends State<HomeScreen> {
       locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
 
+    _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(position.latitude, position.longitude),
+          zoom: 16,
+        ),
+      ),
+    );
     _nMapController?.updateCamera(
       NCameraUpdate.withParams(
         target: NLatLng(position.latitude, position.longitude),
@@ -169,13 +198,15 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const SearchScreen()),
     );
 
-    final NLatLng? location = result?['location'];
+    final LatLng? location = result?['location'];
     if (location != null) {
-      _nMapController?.updateCamera(
-        NCameraUpdate.withParams(
-          target: location,
-          zoom: 16,
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: location, zoom: 16),
         ),
+      );
+      _nMapController?.updateCamera(
+        NCameraUpdate.withParams(target: NLatLng(location.latitude, location.longitude), zoom: 16),
       );
     }
   }
