@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../data/warehouse.dart';
 import '../warehouse/warehouse_management.dart';
-import '../warehouse/warehouse_register_screen.dart';
+import 'register/warehouse_register_screen.dart';
 import 'my_warehouse_view_model.dart';
 
 class MyWarehouseScreen extends StatelessWidget {
@@ -28,7 +28,7 @@ class _MyWarehouseBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<MyWarehouseViewModel>();
     final formatter = NumberFormat('#,###');
-
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('내 창고 목록'),
@@ -39,7 +39,7 @@ class _MyWarehouseBody extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const WarehouseRegisterScreen(),
+                  builder: (_) => WarehouseRegisterScreen(),
                 ),
               );
             },
