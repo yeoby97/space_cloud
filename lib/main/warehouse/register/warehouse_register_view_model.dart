@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -98,7 +100,7 @@ class RegisterViewModel extends ChangeNotifier {
   void touchBox(int row,int col){
     if(isBoxSelected(row, col)){
       removeBox(row, col);
-    }else{
+    }else if(_pickedBox.length < count!){
       addBox(row, col);
     }
   }
@@ -133,8 +135,77 @@ class RegisterViewModel extends ChangeNotifier {
     colFocusNode.dispose();
   }
 
+  void upload(BuildContext context) async {
+    final address = this.address;
+    final location = this.location;
+    if (address == null || location == null){
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("주소를 선택해주세요.")),
+      );
+      return;
+    }
+    final detailAddress = this.detailAddress;
+    if (detailAddress == null || detailAddress.isEmpty){
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("상세 주소를 입력해주세요.")),
+      );
+      return;
+    }
+    final price = int.tryParse(priceController.text.replaceAll(',', ''));
+    if (price == null || price <= 0){
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("월 대여료를 올바르게 입력해주세요.")),
+      );
+      return;
+    }
+    final count = int.tryParse(countController.text);
+    if (count == null || count <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("창고 갯수를 올바르게 입력해주세요.")),
+      );
+      return;
+    }
+    final rows = int.tryParse(rowController.text);
+    if (rows == null || rows <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("행을 올바르게 입력해주세요.")),
+      );
+      return;
+    }
+    final columns = int.tryParse(colController.text);
+    if (columns == null || columns <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("열을 올바르게 입력해주세요.")),
+      );
+      return;
+    }
+    final pickedImages = images;
+    if (pickedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("사진을 선택해주세요.")),
+      );
+      return;
+    }
+    if (_pickedBox.length != count) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("선택한 상자 수가 맞지 않습니다.")),
+      );
+      return;
+    }
+
+    // 조건들 다 확인했으니까 이제 파이어베이스 불러와서 저장 시작
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final user = auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("로그인이 필요합니다.")),
+      );
+    }
+
+    final storage = FirebaseStorage.instance;
 
 
+  }
   RegisterViewModel();
 
 }

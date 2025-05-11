@@ -410,17 +410,46 @@ class _BuildMatrixPreview extends StatelessWidget {
       children: [
         const Text("배치 설정하기", style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
+        Text(
+          '남은 상자 수 : ${viewModel.count! - viewModel.pickedBox.length}',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: ElevatedButton(
-            onPressed: () {
-              viewModel.toggleLayout();
-            },
-            child: const Text("배치 설정하기", style: TextStyle(fontSize: 16)),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ...List.generate(viewModel.row!, (r) {
+                  return Row(
+                    children: [
+                      if (viewModel.col! < 5) SizedBox(width: 35.0*(5-viewModel.col!),),
+                      ...List.generate(viewModel.col!, (c) {
+                        return Padding(
+                          padding: EdgeInsets.all(5),
+                          child: GestureDetector(
+                            onTap: () {viewModel.touchBox(r, c);},
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              color: viewModel.isBoxSelected(r, c) ? Colors.blue : Colors.grey,
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  );
+                }),
+              ],
+            ),
           ),
         ),
       ],
