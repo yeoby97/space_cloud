@@ -10,6 +10,10 @@ import '../../../data/warehouse.dart';
 import '../../home/search/search_screen.dart';
 
 class RegisterViewModel extends ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
   bool _isLayout = false;
@@ -20,8 +24,8 @@ class RegisterViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void startLoading() {
-    _isLoading = true;
+  void _setLoading(bool value) {
+    _isLoading = value;
     notifyListeners();
   }
 
@@ -38,12 +42,9 @@ class RegisterViewModel extends ChangeNotifier {
     final newImages = await picker.pickMultiImage();
 
     if (newImages.isNotEmpty) {
-      _images = _images + newImages;
-      if (_images.length > 10) {
-        _images = _images.sublist(0, 10);
-      }
+      _images = (_images + newImages).take(10).toList();
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   String? address;
@@ -53,9 +54,11 @@ class RegisterViewModel extends ChangeNotifier {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const SearchScreen()),
     );
-    address = result["address"];
-    location = result["location"];
-    notifyListeners();
+    if (result != null && context.mounted) {
+      address = result["address"];
+      location = result["location"];
+      notifyListeners();
+    }
   }
 
   String? detailAddress;
@@ -92,13 +95,13 @@ class RegisterViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<(int, int)> _pickedBox = [];
+  final List<(int, int)> _pickedBox = [];
   List<(int, int)> get pickedBox => _pickedBox;
 
   void touchBox(int row, int col) {
     if (isBoxSelected(row, col)) {
       removeBox(row, col);
-    } else if (_pickedBox.length < count!) {
+    } else if (_pickedBox.length < (_count ?? 0)) {
       addBox(row, col);
     }
   }
@@ -118,12 +121,10 @@ class RegisterViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isBoxSelected(int row, int col) {
-    return _pickedBox.contains((row, col));
-  }
+  bool isBoxSelected(int row, int col) => _pickedBox.contains((row, col));
 
+  @override
   void dispose() {
-    super.dispose();
     priceController.dispose();
     countController.dispose();
     countFocusNode.dispose();
@@ -131,87 +132,20 @@ class RegisterViewModel extends ChangeNotifier {
     rowFocusNode.dispose();
     colController.dispose();
     colFocusNode.dispose();
+    super.dispose();
   }
 
-  void upload(BuildContext context) async {
-    final address = this.address;
-    final location = this.location;
-    if (address == null || location == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("주소를 선택해주세요.")),
-      );
-      return;
-    }
+  Future<void> upload(BuildContext context) async {
+    if (!_validateInputs(context)) return;
 
-    final detailAddress = this.detailAddress;
-    if (detailAddress == null || detailAddress.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("상세 주소를 입력해주세요.")),
-      );
-      return;
-    }
-
-    final price = int.tryParse(priceController.text.replaceAll(',', ''));
-    if (price == null || price <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("월 대여료를 올바르게 입력해주세요.")),
-      );
-      return;
-    }
-
-    final count = int.tryParse(countController.text);
-    if (count == null || count <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("창고 갯수를 올바르게 입력해주세요.")),
-      );
-      return;
-    }
-
-    final rows = int.tryParse(rowController.text);
-    if (rows == null || rows <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("행을 올바르게 입력해주세요.")),
-      );
-      return;
-    }
-
-    final columns = int.tryParse(colController.text);
-    if (columns == null || columns <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("열을 올바르게 입력해주세요.")),
-      );
-      return;
-    }
-
-    final pickedImages = images;
-    if (pickedImages.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("사진을 선택해주세요.")),
-      );
-      return;
-    }
-
-    if (_pickedBox.length != count) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("선택한 상자 수가 맞지 않습니다.")),
-      );
-      return;
-    }
-
-    final FirebaseAuth auth = FirebaseAuth.instance;
-    final user = auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("로그인이 필요합니다.")),
-      );
-      return;
-    }
-
-    startLoading();
+    _setLoading(true);
 
     try {
-      final warehouseRoot = FirebaseFirestore.instance.collection('warehouse');
-      final existingDocs = await warehouseRoot.where('address', isEqualTo: address).get();
+      final user = _auth.currentUser!;
+      final warehouseRoot = _firestore.collection('warehouse');
+
+      // 이미 address가 존재하는지 확인
+      final existingDocs = await warehouseRoot.where('address', isEqualTo: address).limit(1).get();
       DocumentReference docRef;
 
       if (existingDocs.docs.isNotEmpty) {
@@ -221,45 +155,95 @@ class RegisterViewModel extends ChangeNotifier {
         await docRef.set({'address': address});
       }
 
-      List<String> imageUrls = [];
-      for (final image in pickedImages) {
-        final ref = FirebaseStorage.instance.ref('warehouses/${docRef.id}/${image.name}');
+      final imageUrls = await Future.wait(_images.map((image) async {
+        final ref = _storage.ref('warehouses/${docRef.id}/${image.name}');
         await ref.putFile(File(image.path));
-        final url = await ref.getDownloadURL();
-        imageUrls.add(url);
-      }
+        return await ref.getDownloadURL();
+      }));
 
       final warehouse = Warehouse(
-        address: address,
-        detailAddress: detailAddress,
-        count: count,
+        address: address!,
+        detailAddress: detailAddress!,
+        count: _count!,
         createdAt: DateTime.now(),
         images: imageUrls,
-        lat: location.latitude,
-        lng: location.longitude,
-        price: price,
+        lat: location!.latitude,
+        lng: location!.longitude,
+        price: price!,
         ownerId: user.uid,
         layout: {
-          'rows': rows,
-          'columns': columns,
+          'rows': _row,
+          'columns': _col,
           'boxes': _pickedBox.map((e) => {'row': e.$1, 'col': e.$2}).toList(),
         },
       );
 
       await docRef.collection('warehouses').add(warehouse.toMap());
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("창고가 성공적으로 등록되었습니다.")),
-      );
-      Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("창고가 성공적으로 등록되었습니다.")),
+        );
+        Navigator.of(context).pop(true); // 등록 완료됨을 알림
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("등록 중 오류 발생: $e")),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("등록 중 오류 발생: $e")),
+        );
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
+  }
+
+  bool _validateInputs(BuildContext context) {
+    if (address == null || location == null) {
+      _showMessage(context, "주소를 선택해주세요.");
+      return false;
+    }
+    if (detailAddress == null || detailAddress!.isEmpty) {
+      _showMessage(context, "상세 주소를 입력해주세요.");
+      return false;
+    }
+    price = int.tryParse(priceController.text.replaceAll(',', ''));
+    if (price == null || price! <= 0) {
+      _showMessage(context, "월 대여료를 올바르게 입력해주세요.");
+      return false;
+    }
+    _count = int.tryParse(countController.text);
+    if (_count == null || _count! <= 0) {
+      _showMessage(context, "창고 갯수를 올바르게 입력해주세요.");
+      return false;
+    }
+    _row = int.tryParse(rowController.text);
+    if (_row == null || _row! <= 0) {
+      _showMessage(context, "행을 올바르게 입력해주세요.");
+      return false;
+    }
+    _col = int.tryParse(colController.text);
+    if (_col == null || _col! <= 0) {
+      _showMessage(context, "열을 올바르게 입력해주세요.");
+      return false;
+    }
+    if (_images.isEmpty) {
+      _showMessage(context, "사진을 선택해주세요.");
+      return false;
+    }
+    if (_pickedBox.length != _count) {
+      _showMessage(context, "선택한 상자 수가 맞지 않습니다.");
+      return false;
+    }
+    if (_auth.currentUser == null) {
+      _showMessage(context, "로그인이 필요합니다.");
+      return false;
+    }
+    return true;
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   RegisterViewModel();

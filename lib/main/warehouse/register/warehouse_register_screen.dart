@@ -1,5 +1,3 @@
-// TODO : 최적화 및 상태 최상단화
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,8 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:space_cloud/main/warehouse/register/warehouse_register_view_model.dart';
 
-import '../../../data/warehouse.dart';
-import '../../home/search/search_screen.dart';
 import 'layout.dart';
 
 class WarehouseRegisterScreen extends StatefulWidget {
@@ -20,12 +16,11 @@ class WarehouseRegisterScreen extends StatefulWidget {
 }
 
 class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => RegisterViewModel(),
-      child: Body(),
+      child: const Body(),
     );
   }
 }
@@ -35,22 +30,16 @@ class Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    RegisterViewModel viewModel = context.watch<RegisterViewModel>();
-
-    return viewModel.isLayout ? Layout() : WarehouseRegisterBody();
+    final viewModel = context.watch<RegisterViewModel>();
+    return viewModel.isLayout ? const Layout() : const WarehouseRegisterBody();
   }
 }
-
 
 class _PhotoButton extends StatelessWidget {
   final VoidCallback onTap;
   final int pickedCount;
 
-  const _PhotoButton({
-    super.key,
-    required this.onTap,
-    required this.pickedCount,
-  });
+  const _PhotoButton({required this.onTap, required this.pickedCount});
 
   @override
   Widget build(BuildContext context) {
@@ -83,48 +72,31 @@ class WarehouseRegisterBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<RegisterViewModel>();
-    // 가격 포맷
-    final _priceFormat = NumberFormat("#,##0", "ko_KR");
+    final NumberFormat priceFormat = NumberFormat("#,##0", "ko_KR");
 
     return Scaffold(
-      // stack - 입력 위젯과 로딩위젯 중첩 - 나중에 stack 안쓰는 방향으로 수정 가능
       body: Stack(
         children: [
           SafeArea(
-            // 벽에 안붙게 패딩
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              // 스크롤 - 타자판 올라올 때 화면 overflow 방지
               child: SingleChildScrollView(
-                // 본 화면 위젯
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 윗 패딩 역할
                     const SizedBox(height: 30),
-                    // 사진 관련 위젯
                     Row(
                       children: [
-                        // 사진 업로드 버튼
                         _PhotoButton(
-                          // 탭하면 갤러리 이동
                           onTap: viewModel.pickImage,
-                          // 현제 업로드된 사진갯수
                           pickedCount: viewModel.images.length,
                         ),
-                        _PhotoList(
-                          // 사진 리스트
-                          pickedImages: viewModel.images,
-                        ),
+                        _PhotoList(pickedImages: viewModel.images),
                       ],
                     ),
-                    // 간격
                     const SizedBox(height: 16),
-                    // 이벤트발생기
                     GestureDetector(
-                      // 주소 선택
                       onTap: () => viewModel.selectLocation(context),
-                      // 주소 선택시 주소 표시
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(10),
@@ -142,46 +114,27 @@ class WarehouseRegisterBody extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // 간격
                     const SizedBox(height: 12),
-                    // 텍스트 입력 필드
-                    _BuildTextField(hint: '상세 주소'),
-                    // ..
+                    const _BuildTextField(hint: '상세 주소'),
                     const SizedBox(height: 12),
-                    // ..
-                    _BuildNumberField(hint: '월 대여료',unit:  '₩',formatter: _priceFormat,controller: viewModel.priceController),
-                    // ..
+                    _BuildNumberField(hint: '월 대여료', unit: '₩', formatter: priceFormat, controller: viewModel.priceController),
                     const SizedBox(height: 12),
-                    // ..
-                    _BuildNumberField(hint: '창고 갯수',unit: '개',controller: viewModel.countController),
-                    // ..
+                    _BuildNumberField(hint: '창고 갯수', unit: '개', controller: viewModel.countController),
                     const SizedBox(height: 12),
-
-                    // ✅ 행/열 입력 필드
                     Row(
-                      children:[
-                        // Expanded - 화면을 가능한 최대한으로 맞추게 해줌
-                        // 현제는 sizedbox 2개를 제외한 공간을 2개로 분할해 차지
-                        // Expanded 사용 안하면 오류 - textfield는 기본적으로 가로화면 전체 차지해서 오버플로우
-                        Expanded(child: _BuildNumberField(hint: '행',unit:  '',controller: viewModel.rowController)),
+                      children: [
+                        Expanded(child: _BuildNumberField(hint: '행', unit: '', controller: viewModel.rowController)),
                         const SizedBox(width: 12),
-                        Expanded(child: _BuildNumberField(hint: '열',unit:  '',controller: viewModel.colController)),
+                        Expanded(child: _BuildNumberField(hint: '열', unit: '', controller: viewModel.colController)),
                       ],
                     ),
                     const SizedBox(height: 12),
-
-                    // ✅ 미리보기 UI
-                    //
-                    if (viewModel.row != 0 && viewModel.col != 0)
-                      _BuildMatrixPreview(),
-
+                    if (viewModel.row != 0 && viewModel.col != 0) const _BuildMatrixPreview(),
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: FloatingActionButton.extended(
-                        onPressed: () => {
-                          viewModel.upload(context)
-                        },
+                        onPressed: () => viewModel.upload(context),
                         label: const Text("등록", style: TextStyle(fontSize: 16)),
                         icon: const Icon(Icons.check),
                       ),
@@ -193,7 +146,7 @@ class WarehouseRegisterBody extends StatelessWidget {
           ),
           if (viewModel.isLoading)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withAlpha(128),
               child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -211,18 +164,13 @@ class WarehouseRegisterBody extends StatelessWidget {
   }
 }
 
-
 class _PhotoList extends StatelessWidget {
   final List<XFile>? pickedImages;
 
-  const _PhotoList({
-    super.key,
-    required this.pickedImages,
-  });
+  const _PhotoList({required this.pickedImages});
 
   @override
   Widget build(BuildContext context) {
-
     final viewModel = context.watch<RegisterViewModel>();
 
     return Expanded(
@@ -254,7 +202,7 @@ class _PhotoList extends StatelessWidget {
                       onTap: () => viewModel.deletePhoto(index),
                       child: Container(
                         padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.black54,
                           shape: BoxShape.circle,
                         ),
@@ -277,9 +225,9 @@ class _PhotoList extends StatelessWidget {
 }
 
 class _BuildTextField extends StatelessWidget {
-  final hint;
+  final String hint;
 
-  const _BuildTextField({super.key, required this.hint,});
+  const _BuildTextField({required this.hint});
 
   @override
   Widget build(BuildContext context) {
@@ -302,16 +250,16 @@ class _BuildTextField extends StatelessWidget {
           border: InputBorder.none,
         ),
         style: const TextStyle(fontSize: 20),
-        onChanged: (detailAddress) {viewModel.detailAddress = detailAddress;},
+        onChanged: (detailAddress) {
+          viewModel.detailAddress = detailAddress;
+        },
       ),
     );
   }
 }
 
-
 class _BuildMatrixPreview extends StatelessWidget {
-
-  const _BuildMatrixPreview({super.key});
+  const _BuildMatrixPreview();
 
   @override
   Widget build(BuildContext context) {
@@ -326,10 +274,7 @@ class _BuildMatrixPreview extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           '남은 상자 수 : ${viewModel.count! - viewModel.pickedBox.length}',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         Container(
           padding: const EdgeInsets.all(8),
@@ -341,28 +286,26 @@ class _BuildMatrixPreview extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ...List.generate(viewModel.row!, (r) {
-                  return Row(
-                    children: [
-                      if (viewModel.col! < 5) SizedBox(width: 35.0*(5-viewModel.col!),),
-                      ...List.generate(viewModel.col!, (c) {
-                        return Padding(
-                          padding: EdgeInsets.all(5),
-                          child: GestureDetector(
-                            onTap: () {viewModel.touchBox(r, c);},
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              color: viewModel.isBoxSelected(r, c) ? Colors.blue : Colors.grey,
-                            ),
+              children: List.generate(viewModel.row!, (r) {
+                return Row(
+                  children: [
+                    if (viewModel.col! < 5) SizedBox(width: 35.0 * (5 - viewModel.col!)),
+                    ...List.generate(viewModel.col!, (c) {
+                      return Padding(
+                        padding: const EdgeInsets.all(5),
+                        child: GestureDetector(
+                          onTap: () => viewModel.touchBox(r, c),
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            color: viewModel.isBoxSelected(r, c) ? Colors.blue : Colors.grey,
                           ),
-                        );
-                      }),
-                    ],
-                  );
-                }),
-              ],
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              }),
             ),
           ),
         ),
@@ -375,8 +318,9 @@ class _BuildNumberField extends StatelessWidget {
   final String hint;
   final String unit;
   final NumberFormat? formatter;
-  final controller;
-  _BuildNumberField({super.key, required this.hint, required this.unit,this.formatter,required this.controller});
+  final TextEditingController controller;
+
+  const _BuildNumberField({required this.hint, required this.unit, this.formatter, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -388,8 +332,6 @@ class _BuildNumberField extends StatelessWidget {
       '창고 갯수': viewModel.countFocusNode,
     };
 
-    // setController(viewModel,controller,hint);
-    final formatter = this.formatter;
     return Container(
       width: 200,
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -407,17 +349,14 @@ class _BuildNumberField extends StatelessWidget {
               focusNode: focusMap[hint],
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                FilteringTextInputFormatter.digitsOnly,
                 TextInputFormatter.withFunction((oldValue, newValue) {
                   final text = newValue.text.replaceAll(',', '');
                   int? value = int.tryParse(text);
-                  changeNumber(viewModel,hint,value);
+                  _changeNumber(viewModel, hint, value);
                   if (text.isEmpty) return newValue;
                   final formatted = formatter?.format(value) ?? value.toString();
-                  return TextEditingValue(
-                    text: formatted,
-                  );
-                })
+                  return TextEditingValue(text: formatted);
+                }),
               ],
               decoration: InputDecoration(
                 hintText: hint,
@@ -434,8 +373,9 @@ class _BuildNumberField extends StatelessWidget {
       ),
     );
   }
-  void changeNumber(RegisterViewModel viewModel,String hint,int? num){
-    switch(hint){
+
+  void _changeNumber(RegisterViewModel viewModel, String hint, int? num) {
+    switch (hint) {
       case '행':
         viewModel.rowChange(num);
         break;
@@ -451,22 +391,4 @@ class _BuildNumberField extends StatelessWidget {
       default:
     }
   }
-  // void setController(RegisterViewModel viewModel,TextEditingController controller,String hint){
-  //   switch(hint){
-  //     case '행':
-  //       controller.text = viewModel.row?.toString() ?? '';
-  //       break;
-  //     case '열':
-  //       controller.text = viewModel.col?.toString() ?? '';
-  //       break;
-  //     case '월 대여료':
-  //       controller.text = viewModel.price?.toString() ?? '';
-  //       break;
-  //     case '창고 갯수':
-  //       controller.text = viewModel.count?.toString() ?? '';
-  //       break;
-  //     default:
-  //   }
-  // }
 }
-

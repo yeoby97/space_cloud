@@ -2,25 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import '../../data/warehouse.dart';
 import '../warehouse/warehouse_management.dart';
 import 'register/warehouse_register_screen.dart';
 import 'my_warehouse_view_model.dart';
 
-class MyWarehouseScreen extends StatelessWidget {
+class MyWarehouseScreen extends StatefulWidget {
   const MyWarehouseScreen({super.key});
 
   @override
+  State<MyWarehouseScreen> createState() => _MyWarehouseScreenState();
+}
+
+class _MyWarehouseScreenState extends State<MyWarehouseScreen> {
+  late MyWarehouseViewModel viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    viewModel = MyWarehouseViewModel();
+    viewModel.loadOnce();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => MyWarehouseViewModel(),
+    return ChangeNotifierProvider.value(
+      value: viewModel,
       child: const _MyWarehouseBody(),
     );
   }
 }
 
 class _MyWarehouseBody extends StatelessWidget {
-  const _MyWarehouseBody({super.key});
+  const _MyWarehouseBody();
 
   @override
   Widget build(BuildContext context) {
@@ -34,12 +47,16 @@ class _MyWarehouseBody extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: '창고 등록',
-            onPressed: () {
-              Navigator.of(context).push(
+            onPressed: () async {
+              final result = await Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const WarehouseRegisterScreen(),
                 ),
               );
+              if (!context.mounted) return;
+              if (result == true) {
+                await context.read<MyWarehouseViewModel>().refresh();
+              }
             },
           ),
         ],
@@ -54,7 +71,12 @@ class _MyWarehouseBody extends StatelessWidget {
     }
 
     if (viewModel.error != null) {
-      return Center(child: Text(viewModel.error!, style: const TextStyle(color: Colors.red)));
+      return Center(
+        child: Text(
+          viewModel.error!,
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
     }
 
     final warehouses = viewModel.warehouses;

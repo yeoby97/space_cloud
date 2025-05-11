@@ -12,9 +12,6 @@ import 'package:space_cloud/main/list/list_screen.dart';
 import 'package:space_cloud/main/warehouse/my_warehouse_view_model.dart';
 import 'package:space_cloud/sign/signin/signin_screen.dart';
 
-import 'home/home_view_model.dart';
-import 'home/my_location/my_location_view_model.dart';
-
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -26,39 +23,17 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   DateTime? _lastBackPressed;
   final ValueNotifier<bool> _isBottomSheetOpen = ValueNotifier(false);
-  late final HomeViewModel _homeViewModel;
-  late final MyLocationViewModel _locationViewModel;
-
-  @override
-  void initState() {
-    super.initState();
-    _homeViewModel = HomeViewModel();
-    _locationViewModel = MyLocationViewModel();
-  }
-
-  @override
-  void dispose() {
-    _homeViewModel.dispose();
-    _locationViewModel.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: _homeViewModel),
-        ChangeNotifierProvider.value(value: _locationViewModel),
-      ],
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) _handleBackPressed();
-        },
-        child: Scaffold(
-          body: _buildBody(),
-          floatingActionButton: _buildFloatingButton(),
-        ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBackPressed();
+      },
+      child: Scaffold(
+        body: _buildBody(),
+        floatingActionButton: _buildFloatingButton(),
       ),
     );
   }
@@ -123,6 +98,7 @@ class _MainScreenState extends State<MainScreen> {
       setState(() => _currentIndex = 0);
       return;
     }
+
     if (_isBottomSheetOpen.value) {
       _isBottomSheetOpen.value = false;
       return;
