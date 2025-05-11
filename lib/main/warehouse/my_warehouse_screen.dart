@@ -32,8 +32,19 @@ class _MyWarehouseScreenState extends State<MyWarehouseScreen> {
   }
 }
 
-class _MyWarehouseBody extends StatelessWidget {
-  const _MyWarehouseBody();
+class _MyWarehouseBody extends StatefulWidget {
+  const _MyWarehouseBody({super.key});
+
+  @override
+  State<_MyWarehouseBody> createState() => _MyWarehouseBodyState();
+}
+
+class _MyWarehouseBodyState extends State<_MyWarehouseBody> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    context.read<MyWarehouseViewModel>().loadOnce();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +60,10 @@ class _MyWarehouseBody extends StatelessWidget {
             tooltip: '창고 등록',
             onPressed: () async {
               final result = await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const WarehouseRegisterScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const WarehouseRegisterScreen()),
               );
-              if (!context.mounted) return;
+
+              // 등록 완료 후 새로고침
               if (result == true) {
                 await context.read<MyWarehouseViewModel>().refresh();
               }
@@ -61,22 +71,17 @@ class _MyWarehouseBody extends StatelessWidget {
           ),
         ],
       ),
-      body: _buildBody(context, viewModel, formatter),
+      body: _buildBody(viewModel, formatter),
     );
   }
 
-  Widget _buildBody(BuildContext context, MyWarehouseViewModel viewModel, NumberFormat formatter) {
+  Widget _buildBody(MyWarehouseViewModel viewModel, NumberFormat formatter) {
     if (viewModel.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (viewModel.error != null) {
-      return Center(
-        child: Text(
-          viewModel.error!,
-          style: const TextStyle(color: Colors.red),
-        ),
-      );
+      return Center(child: Text(viewModel.error!, style: const TextStyle(color: Colors.red)));
     }
 
     final warehouses = viewModel.warehouses;
@@ -88,7 +93,6 @@ class _MyWarehouseBody extends StatelessWidget {
       itemCount: warehouses.length,
       itemBuilder: (context, index) {
         final warehouse = warehouses[index];
-
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: ListTile(

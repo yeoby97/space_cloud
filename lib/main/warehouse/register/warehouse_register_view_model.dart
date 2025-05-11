@@ -184,7 +184,7 @@ class RegisterViewModel extends ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("창고가 성공적으로 등록되었습니다.")),
         );
-        Navigator.of(context).pop(true); // 등록 완료됨을 알림
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (context.mounted) {
