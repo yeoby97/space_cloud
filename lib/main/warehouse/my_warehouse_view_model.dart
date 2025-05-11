@@ -20,10 +20,11 @@ class MyWarehouseViewModel extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> startListening() async {
-    final user = _auth.currentUser;
+    var user = _auth.currentUser;
+
     if (user == null) {
       _setError('로그인이 필요합니다.');
-      return;
+      user = await _auth.authStateChanges().firstWhere((u) => u != null);
     }
 
     _setLoading(true);
@@ -49,7 +50,7 @@ class MyWarehouseViewModel extends ChangeNotifier {
 
         for (final doc in snapshot.docs) {
           final data = doc.data() as Map<String, dynamic>;
-          if (data['ownerId'] == user.uid) {
+          if (data['ownerId'] == user!.uid) {
             userWarehouses.add(Warehouse.fromDoc(doc));
           }
         }

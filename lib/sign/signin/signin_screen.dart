@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:space_cloud/sign/signin/sigin_view_model.dart';
@@ -21,22 +22,29 @@ class _SignInBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<SignInViewModel>();
+    final isLoading = context.select<SignInViewModel, bool>((vm) => vm.isLoading);
 
     return Center(
-      child: viewModel.isLoading
+      child: isLoading
           ? const CircularProgressIndicator()
           : ElevatedButton(
-        onPressed: () => _handleSignIn(context, viewModel),
+        onPressed: () => _handleSignIn(context),
         child: const Text('Google 로그인'),
       ),
     );
   }
 
-  Future<void> _handleSignIn(BuildContext context, SignInViewModel viewModel) async {
+  Future<void> _handleSignIn(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final viewModel = context.read<SignInViewModel>();
+
     final success = await viewModel.signInWithGoogle();
-    if (context.mounted && success) {
-      Navigator.pop(context, true);
+
+    if (success) {
+      await FirebaseAuth.instance.authStateChanges().firstWhere((user) => user != null);
+      if (context.mounted) {
+        navigator.pop(true);
+      }
     }
   }
 }

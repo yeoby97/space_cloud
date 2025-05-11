@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../data/user.dart';
 
@@ -27,7 +27,7 @@ class SignInViewModel extends ChangeNotifier {
     _setLoading(true);
     try {
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return _finish(false);
+      if (googleUser == null) return _complete(false);
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -36,13 +36,14 @@ class SignInViewModel extends ChangeNotifier {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-      final firebaseUser = userCredential.user;
-      if (firebaseUser == null) return _finish(false);
+      final user = userCredential.user;
+      if (user == null) return _complete(false);
 
-      await _createUserIfNeeded(firebaseUser);
-      return _finish(true);
-    } catch (e) {
-      return _setError('로그인 실패: $e');
+      await _createUserIfNeeded(user);
+      return _complete(true);
+    } catch (e, stack) {
+      debugPrint('Google Sign-In Error: $e\n$stack');
+      return _fail('로그인 중 오류가 발생했습니다.');
     }
   }
 
@@ -63,21 +64,20 @@ class SignInViewModel extends ChangeNotifier {
   }
 
   void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
+    if (_isLoading != value) {
+      _isLoading = value;
+      notifyListeners();
+    }
   }
 
-  bool _finish(bool result) {
-    _isLoading = false;
-    notifyListeners();
+  bool _complete(bool result) {
+    _setLoading(false);
     return result;
   }
 
-  bool _setError(String message) {
+  bool _fail(String message) {
     _error = message;
-    _isLoading = false;
-    notifyListeners();
+    _setLoading(false);
     return false;
   }
 }
-

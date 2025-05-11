@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
+import '../../sign/signin/signin_screen.dart';
 import '../warehouse/warehouse_management.dart';
 import 'register/warehouse_register_screen.dart';
 import 'my_warehouse_view_model.dart';
@@ -33,13 +35,28 @@ class _MyWarehouseBody extends StatelessWidget {
             tooltip: '창고 등록',
             onPressed: () async {
               final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               final viewModel = context.read<MyWarehouseViewModel>();
+              final user = FirebaseAuth.instance.currentUser;
 
-              final result = await navigator.push(
+              if (user == null) {
+                final loginResult = await navigator.push(
+                  MaterialPageRoute(builder: (_) => const SignInScreen()),
+                );
+
+                if (loginResult != true) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('로그인 후 이용해주세요.')),
+                  );
+                  return;
+                }
+              }
+
+              final registerResult = await navigator.push(
                 MaterialPageRoute(builder: (_) => const WarehouseRegisterScreen()),
               );
 
-              if (result == true) {
+              if (registerResult == true) {
                 await viewModel.refresh();
               }
             },
