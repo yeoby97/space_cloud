@@ -25,11 +25,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeViewModel>().startListeningToWarehouses(
-        onTapWarehouse: (_) {
-          widget.isBottomSheetOpenNotifier.value = true;
-        },
-      );
+      final homeVM = context.read<HomeViewModel>();
+      homeVM.updateOnTapCallback((_) {
+        widget.isBottomSheetOpenNotifier.value = true;
+      });
+      homeVM.startListeningToWarehouses();
     });
   }
 
@@ -41,51 +41,84 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          Consumer2<MyLocationViewModel, HomeViewModel>(
-            builder: (context, locationVM, homeVM, child) {
-              final position = locationVM.currentPosition;
-              if (position == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return GoogleMap(
-                mapToolbarEnabled: false,
-                zoomControlsEnabled: false,
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false,
-                initialCameraPosition: CameraPosition(
-                  target: LatLng(position.latitude, position.longitude),
-                  zoom: 16,
-                ),
-                onMapCreated: (controller) {
-                  _mapController = controller;
-                },
-                markers: Set<Marker>.from(homeVM.markers),
-              );
-            },
-          ),
-          _buildSearchBox(),
-          SafeArea(child: _buildLocationButton()),
-          Selector<HomeViewModel, Warehouse?>(
-            selector: (_, vm) => vm.selectedWarehouse,
-            builder: (context, selectedWarehouse, _) {
-              if (selectedWarehouse == null) return const SizedBox.shrink();
-              return CustomBottomSheet(
-                warehouse: selectedWarehouse,
-                isOpenNotifier: widget.isBottomSheetOpenNotifier,
-                onClose: () {
-                  widget.isBottomSheetOpenNotifier.value = false;
-                  context.read<HomeViewModel>().clearSelectedWarehouse();
-                },
-                onTap: () => _navigateToWarehouseManagement(selectedWarehouse),
-              );
-            },
-          ),
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBackPressed();
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Consumer2<MyLocationViewModel, HomeViewModel>(
+              builder: (context, locationVM, homeVM, child) {
+                final position = locationVM.currentPosition;
+                if (position == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return GoogleMap(
+                  mapToolbarEnabled: false,
+                  zoomControlsEnabled: false,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(position.latitude, position.longitude),
+                    zoom: 16,
+                  ),
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                  },
+                  markers: Set<Marker>.from(homeVM.markers),
+                );
+              },
+            ),
+            _buildSearchBox(),
+            SafeArea(child: _buildLocationButton()),
+
+            ValueListenableBuilder<bool>(
+              valueListenable: widget.isBottomSheetOpenNotifier,
+              builder: (_, isOpen, __) {
+                if (!isOpen) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () {
+                      widget.isBottomSheetOpenNotifier.value = false;
+                    },
+                    child: Container(
+                      color: Colors.black.withOpacity(0.3),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            Selector<HomeViewModel, Warehouse?>(
+              selector: (_, vm) => vm.selectedWarehouse,
+              builder: (context, selectedWarehouse, _) {
+                if (selectedWarehouse == null) return const SizedBox.shrink();
+                return CustomBottomSheet(
+                  warehouse: selectedWarehouse,
+                  isOpenNotifier: widget.isBottomSheetOpenNotifier,
+                  onClose: () {
+                    widget.isBottomSheetOpenNotifier.value = false;
+                    context.read<HomeViewModel>().clearSelectedWarehouse();
+                  },
+                  onTap: () => _navigateToWarehouseManagement(selectedWarehouse),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _handleBackPressed() async {
+    if (widget.isBottomSheetOpenNotifier.value) {
+      widget.isBottomSheetOpenNotifier.value = false;
+      return;
+    }
+
+    // 여기에 기존 홈 화면 탭 이동 or 앱 종료 로직
   }
 
   Widget _buildSearchBox() {

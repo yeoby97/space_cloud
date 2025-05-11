@@ -11,7 +11,7 @@ class MyWarehouseViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<Warehouse> _warehouses = [];
-  StreamSubscription? _subscription; // Stream<dynamic> 이므로 구체 타입 생략
+  StreamSubscription? _subscription;
   bool _isLoading = false;
   String? _error;
 
@@ -44,28 +44,26 @@ class MyWarehouseViewModel extends ChangeNotifier {
       final mergedStream = StreamGroup.merge(streams);
 
       _subscription?.cancel();
-      _subscription = mergedStream.listen((event) {
+      _subscription = mergedStream.listen((QuerySnapshot snapshot) {
         final List<Warehouse> userWarehouses = [];
 
-        if (event is QuerySnapshot) {
-          for (final doc in event.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            if (data['ownerId'] == user.uid) {
-              userWarehouses.add(Warehouse.fromDoc(doc));
-            }
+        for (final doc in snapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['ownerId'] == user.uid) {
+            userWarehouses.add(Warehouse.fromDoc(doc));
           }
-
-          final Map<String, Warehouse> unique = {
-            for (var w in _warehouses) w.id: w,
-            for (var w in userWarehouses) w.id: w,
-          };
-
-          _warehouses = unique.values.toList()
-            ..sort((a, b) =>
-                (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
-
-          notifyListeners();
         }
+
+        final Map<String, Warehouse> unique = {
+          for (var w in _warehouses) w.id: w,
+          for (var w in userWarehouses) w.id: w,
+        };
+
+        _warehouses = unique.values.toList()
+          ..sort((a, b) =>
+              (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+
+        notifyListeners();
       });
 
       _setError(null);

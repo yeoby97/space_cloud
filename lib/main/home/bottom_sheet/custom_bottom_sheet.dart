@@ -46,7 +46,9 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> with SingleTicker
     widget.isOpenNotifier.addListener(_handleCloseSignal);
     if (widget.isInitial) {
       _sheetHeight = 0;
-      Future.microtask(() => setState(() => _sheetHeight = 300));
+      Future.delayed(const Duration(milliseconds: 10), () {
+        if (mounted) setState(() => _sheetHeight = 300);
+      });
     }
     _loadSpaces();
 
@@ -106,16 +108,13 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> with SingleTicker
 
   void _handleDragEnd(DragEndDetails details) {
     final velocity = details.velocity.pixelsPerSecond.dy;
-    final midpoint = (_maxHeight + 300) / 2;
 
-    if (_sheetHeight < 300 || velocity > 800) {
-      _fadeController.reverse();
-      setState(() => _sheetHeight = 0);
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) widget.onClose();
-      });
+    if (_sheetHeight < 200 || velocity > 700) {
+      _closeSheet(); // 추출
+    } else if (_sheetHeight > 500 || velocity < -700) {
+      setState(() => _sheetHeight = _maxHeight);
     } else {
-      setState(() => _sheetHeight = velocity < -800 || _sheetHeight > midpoint ? _maxHeight : 300);
+      setState(() => _sheetHeight = 300); // 기본 위치로 복귀
     }
   }
 
@@ -298,5 +297,13 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> with SingleTicker
         ],
       ),
     );
+  }
+
+  void _closeSheet() {
+    _fadeController.reverse();
+    setState(() => _sheetHeight = 0);
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) widget.onClose();
+    });
   }
 }

@@ -12,10 +12,12 @@ class Layout extends StatelessWidget {
     double width = (viewModel.col! >= 5 ? viewModel.col! : 5) * 70 + 1000;
 
 
-    return WillPopScope(
-      onWillPop: () async {
-        viewModel.toggleLayout();
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          viewModel.toggleLayout();
+        }
       },
       child: Scaffold(
         body: Center(

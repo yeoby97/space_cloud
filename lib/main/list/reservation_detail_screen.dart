@@ -9,11 +9,11 @@ class ReservationDetailPage extends StatelessWidget {
   final Map<String, dynamic> reservation;
 
   const ReservationDetailPage({
-    Key? key,
+    super.key,
     required this.warehouse,
     required this.space,
     required this.reservation,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +52,7 @@ class ReservationDetailPage extends StatelessWidget {
             Spacer(),
             ElevatedButton(
               onPressed: () {
-                // 예약 취소 로직 (예: Firestore 삭제 등)
-                // 나중에 구현해도 됨
+                // TODO 예약 취소 로직 (예: Firestore 삭제 등)
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,

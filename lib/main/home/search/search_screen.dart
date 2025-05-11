@@ -21,7 +21,7 @@ class SearchScreen extends StatelessWidget {
 }
 
 class _SearchScreenBody extends StatelessWidget {
-  const _SearchScreenBody({super.key});
+  const _SearchScreenBody();
 
   @override
   Widget build(BuildContext context) {

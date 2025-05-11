@@ -19,22 +19,24 @@ class FavoriteButton extends StatelessWidget {
 
     return IconButton(
       onPressed: () async {
-        final user = FirebaseAuth.instance.currentUser;
+        final navigator = Navigator.of(context);
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        final homeViewModel = context.read<HomeViewModel>();
 
+        final user = FirebaseAuth.instance.currentUser;
         if (user == null) {
-          final result = await Navigator.push(
-            context,
+          final result = await navigator.push(
             MaterialPageRoute(builder: (_) => const SignInScreen()),
           );
           if (result == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            scaffoldMessenger.showSnackBar(
               const SnackBar(content: Text('로그인 후 이용할 수 있습니다.')),
             );
             return;
           }
         }
 
-        await context.read<HomeViewModel>().toggleFavorite(warehouse);
+        await homeViewModel.toggleFavorite(warehouse);
       },
       icon: Icon(
         isFavorited ? Icons.favorite : Icons.favorite_border,

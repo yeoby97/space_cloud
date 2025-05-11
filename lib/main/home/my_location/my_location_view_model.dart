@@ -15,20 +15,18 @@ class MyLocationViewModel extends ChangeNotifier {
   Position? get currentPosition => _currentPosition;
 
   Future<void> _initialize() async {
-    // 앱 시작 시 최초 위치 가져오기
     try {
       _currentPosition = await Geolocator.getCurrentPosition();
     } catch (e) {
-      print("초기 위치 가져오기 실패: $e");
+      // print("초기 위치 가져오기 실패: $e");
     }
 
-    // 위치 스트림 구독
     _subscription = _myLocation.positionStream.listen((position) {
       _currentPosition = position;
       notifyListeners();
     });
 
-    notifyListeners(); // 초기 위치 반영
+    notifyListeners();
   }
 
   @override

@@ -46,7 +46,7 @@ class RecentWarehouseService {
 
     final docRef = FirebaseFirestore.instance.collection('recent_warehouses').doc(user.uid);
     final doc = await docRef.get();
-    if (!doc.exists || !(doc.data()?['list'] is List)) return;
+    if (doc.data()?['list'] is! List) return;
 
     final jsonList = List<String>.from(doc.data()!['list']);
     final prefs = await SharedPreferences.getInstance();

@@ -15,11 +15,13 @@ class HomeViewModel extends ChangeNotifier {
   final List<Marker> _markers = [];
   final Map<MarkerId, Warehouse> _markerWarehouseMap = {};
   final Set<String> _favoriteWarehouseIds = {};
+  final FavoriteService _favoriteService = FavoriteService();
 
   Warehouse? _selectedWarehouse;
   StreamSubscription<QuerySnapshot>? _snapshotSub;
+  bool _isListening = false;
 
-  final FavoriteService _favoriteService = FavoriteService();
+  void Function(Warehouse)? _onTapWarehouseCallback;
 
   List<Marker> get markers => _markers;
   Warehouse? get selectedWarehouse => _selectedWarehouse;
@@ -29,12 +31,16 @@ class HomeViewModel extends ChangeNotifier {
     _loadFavoriteWarehouses();
   }
 
-  /// 실시간 창고 반영
-  void startListeningToWarehouses({required void Function(Warehouse) onTapWarehouse}) {
-    _snapshotSub?.cancel(); // 중복 방지
+  void updateOnTapCallback(void Function(Warehouse) callback) {
+    _onTapWarehouseCallback = callback;
+  }
+
+  void startListeningToWarehouses() {
+    if (_isListening) return;
+    _isListening = true;
 
     _snapshotSub = FirebaseFirestore.instance
-        .collectionGroup('warehouses') // 모든 하위 컬렉션 접근
+        .collectionGroup('warehouses')
         .snapshots()
         .listen((snapshot) {
       _markers.clear();
@@ -55,7 +61,7 @@ class HomeViewModel extends ChangeNotifier {
             _selectedWarehouse = warehouse;
             notifyListeners();
             RecentWarehouseManager.addWarehouse(warehouse);
-            onTapWarehouse(warehouse);
+            _onTapWarehouseCallback?.call(warehouse);
           },
         );
 
@@ -63,20 +69,13 @@ class HomeViewModel extends ChangeNotifier {
         _markerWarehouseMap[markerId] = warehouse;
       }
 
-      notifyListeners(); // 마커 갱신
+      notifyListeners();
     });
   }
 
   void clearSelectedWarehouse() {
     if (_selectedWarehouse != null) {
       _selectedWarehouse = null;
-      notifyListeners();
-    }
-  }
-
-  void clearMarkers() {
-    if (_markers.isNotEmpty) {
-      _markers.clear();
       notifyListeners();
     }
   }
@@ -120,6 +119,7 @@ class HomeViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _snapshotSub?.cancel();
+    _isListening = false;
     super.dispose();
   }
 }

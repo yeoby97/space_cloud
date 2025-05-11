@@ -17,7 +17,7 @@ class MyWarehouseScreen extends StatelessWidget {
 }
 
 class _MyWarehouseBody extends StatelessWidget {
-  const _MyWarehouseBody({super.key});
+  const _MyWarehouseBody();
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +32,15 @@ class _MyWarehouseBody extends StatelessWidget {
             icon: const Icon(Icons.add),
             tooltip: '창고 등록',
             onPressed: () async {
-              final result = await Navigator.of(context).push(
+              final navigator = Navigator.of(context);
+              final viewModel = context.read<MyWarehouseViewModel>();
+
+              final result = await navigator.push(
                 MaterialPageRoute(builder: (_) => const WarehouseRegisterScreen()),
               );
+
               if (result == true) {
-                await context.read<MyWarehouseViewModel>().refresh();
+                await viewModel.refresh();
               }
             },
           ),

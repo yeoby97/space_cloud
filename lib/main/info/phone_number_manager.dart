@@ -10,12 +10,13 @@ class PhoneNumberManager {
       String initialPhone,
       void Function(String) onUpdated,
       ) async {
+    final navigator = Navigator.of(context);
     final controller = TextEditingController(text: formatPhoneNumber(initialPhone));
     final formKey = GlobalKey<FormState>();
 
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('전화번호 수정'),
         content: Form(
           key: formKey,
@@ -34,7 +35,7 @@ class PhoneNumberManager {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => navigator.pop(),
             child: const Text('취소'),
           ),
           TextButton(
@@ -43,7 +44,7 @@ class PhoneNumberManager {
                 final cleaned = _onlyDigits(controller.text);
                 await _updatePhoneNumber(cleaned);
                 onUpdated(cleaned);
-                Navigator.pop(context);
+                navigator.pop();
               }
             },
             child: const Text('저장'),

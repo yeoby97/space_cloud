@@ -30,12 +30,12 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _warehouseViewModel = MyWarehouseViewModel();
-    _warehouseViewModel.startListening(); // ✅ 최초 1회만 로딩
+    _warehouseViewModel.startListening();
   }
 
   @override
   void dispose() {
-    _warehouseViewModel.dispose(); // ✅ 메모리 정리
+    _warehouseViewModel.dispose();
     super.dispose();
   }
 
@@ -60,7 +60,7 @@ class _MainScreenState extends State<MainScreen> {
       case 1:
         return ChangeNotifierProvider.value(
           value: _warehouseViewModel,
-          child: const MyWarehouseScreen(), // ✅ Provider는 여기서 주입됨
+          child: const MyWarehouseScreen(),
         );
       case 2:
         return const ListScreen();

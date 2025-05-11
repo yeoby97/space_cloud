@@ -21,9 +21,10 @@ class PredictionList extends StatelessWidget {
             leading: const Icon(Icons.location_on),
             title: Text(prediction.description ?? ""),
             onTap: () async {
+              final navigator = Navigator.of(context);
               LatLng? location = await getLatLngFromPrediction(prediction);
 
-              Navigator.of(context).pop({
+              navigator.pop({
                 'placeId': prediction.placeId,
                 'address': prediction.description,
                 'location': location,

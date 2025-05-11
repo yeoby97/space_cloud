@@ -76,6 +76,7 @@ class ProfileImageManager {
   }
 
   Future<void> _pickAndUploadImage() async {
+    final navigator = Navigator.of(context);
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
@@ -102,7 +103,7 @@ class ProfileImageManager {
     } catch (e) {
       _showErrorDialog("이미지 업로드에 실패했습니다.");
     } finally {
-      if (Navigator.canPop(context)) Navigator.pop(context);
+      if (navigator.canPop()) navigator.pop();
     }
   }
 

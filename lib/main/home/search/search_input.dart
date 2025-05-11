@@ -20,7 +20,7 @@ class SearchInput extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withAlpha(51),
             blurRadius: 10,
             spreadRadius: 2,
             offset: const Offset(3, 3),

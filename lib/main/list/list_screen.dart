@@ -48,7 +48,6 @@ class _ListScreen extends State<ListScreen> {
           final imageUrls = List<String>.from(warehouse['images'] ?? []);
           final startDate = _parseDate(reservation['start']);
           final endDate = _parseDate(reservation['end']);
-          print(imageUrls[0]);
           return GestureDetector(
             onTap: () {
               Navigator.push(
@@ -87,7 +86,6 @@ class _ListScreen extends State<ListScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 이미지 영역
                         if (imageUrls.isNotEmpty)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
@@ -100,12 +98,10 @@ class _ListScreen extends State<ListScreen> {
                           ),
                         const SizedBox(width: 12),
 
-                        // 정보 영역
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // 주소
                               Text(
                                 address,
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -113,8 +109,6 @@ class _ListScreen extends State<ListScreen> {
                                 maxLines: 1,
                               ),
                               const SizedBox(height: 4),
-
-                              // 상세 주소
                               Text(
                                 detailAddress,
                                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
@@ -122,8 +116,6 @@ class _ListScreen extends State<ListScreen> {
                                 maxLines: 1,
                               ),
                               const SizedBox(height: 12),
-
-                              // 상세 주소
                               Text(
                                 spaceName,
                                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
@@ -131,8 +123,6 @@ class _ListScreen extends State<ListScreen> {
                                 maxLines: 1,
                               ),
                               const SizedBox(height: 12),
-
-                              // 날짜
                               Row(
                                 children: [
                                   Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
@@ -175,20 +165,16 @@ class _ListScreen extends State<ListScreen> {
     List<DocumentSnapshot> reservations = [];
 
     for (var reservationDoc in querySnapshot.docs) {
-      print("존재함");
       final reservationRef = reservationDoc.reference;
       final spaceRef = reservationRef.parent.parent;
       final warehouseRef = spaceRef?.parent.parent;
 
       if (spaceRef != null && warehouseRef != null) {
-        // 예약 문서 추가
         reservations.add(reservationDoc);
 
-        // 공간 문서 가져오기
         final spaceDoc = await spaceRef.get();
         spaces.add(spaceDoc);
 
-        // 창고 문서 가져오기
         final warehouseDoc = await warehouseRef.get();
         warehouses.add(warehouseDoc);
       }
@@ -212,7 +198,7 @@ class _ListScreen extends State<ListScreen> {
     } else if (value is String) {
       return DateTime.parse(value);
     } else {
-      return DateTime.now(); // fallback
+      return DateTime.now();
     }
   }
 }
