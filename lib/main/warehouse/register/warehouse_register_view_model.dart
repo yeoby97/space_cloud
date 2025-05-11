@@ -10,12 +10,12 @@ import '../../../data/warehouse.dart';
 import '../../home/search/search_screen.dart';
 
 class RegisterViewModel extends ChangeNotifier {
-
   bool _isLoading = false;
   bool get isLoading => _isLoading;
   bool _isLayout = false;
   bool get isLayout => _isLayout;
-  void toggleLayout(){
+
+  void toggleLayout() {
     _isLayout = !_isLayout;
     notifyListeners();
   }
@@ -28,7 +28,7 @@ class RegisterViewModel extends ChangeNotifier {
   List<XFile> _images = [];
   List<XFile> get images => _images;
 
-  void deletePhoto(int index){
+  void deletePhoto(int index) {
     _images.removeAt(index);
     notifyListeners();
   }
@@ -37,11 +37,8 @@ class RegisterViewModel extends ChangeNotifier {
     final picker = ImagePicker();
     final newImages = await picker.pickMultiImage();
 
-
     if (newImages.isNotEmpty) {
       _images = _images + newImages;
-
-      // 10장 넘으면 앞에서부터 자르기 (뒤에 선택한 게 우선이므로 뒤에서부터 남겨둠)
       if (_images.length > 10) {
         _images = _images.sublist(0, 10);
       }
@@ -50,7 +47,6 @@ class RegisterViewModel extends ChangeNotifier {
   }
 
   String? address;
-
   LatLng? location;
 
   void selectLocation(BuildContext context) async {
@@ -63,7 +59,6 @@ class RegisterViewModel extends ChangeNotifier {
   }
 
   String? detailAddress;
-
   final priceController = TextEditingController();
   int? price;
 
@@ -71,7 +66,7 @@ class RegisterViewModel extends ChangeNotifier {
   final countFocusNode = FocusNode();
   int? _count;
   int? get count => _count;
-  void countChange(int? value){
+  void countChange(int? value) {
     _count = value;
     clearBox();
     notifyListeners();
@@ -81,7 +76,7 @@ class RegisterViewModel extends ChangeNotifier {
   final rowFocusNode = FocusNode();
   int? _row;
   int? get row => _row;
-  void rowChange(int? value){
+  void rowChange(int? value) {
     _row = value;
     clearBox();
     notifyListeners();
@@ -91,7 +86,7 @@ class RegisterViewModel extends ChangeNotifier {
   final colFocusNode = FocusNode();
   int? _col;
   int? get col => _col;
-  void colChange(int? value){
+  void colChange(int? value) {
     _col = value;
     clearBox();
     notifyListeners();
@@ -100,30 +95,30 @@ class RegisterViewModel extends ChangeNotifier {
   List<(int, int)> _pickedBox = [];
   List<(int, int)> get pickedBox => _pickedBox;
 
-  void touchBox(int row,int col){
-    if(isBoxSelected(row, col)){
+  void touchBox(int row, int col) {
+    if (isBoxSelected(row, col)) {
       removeBox(row, col);
-    }else if(_pickedBox.length < count!){
+    } else if (_pickedBox.length < count!) {
       addBox(row, col);
     }
   }
 
-  void addBox(int row,int col){
+  void addBox(int row, int col) {
     _pickedBox.add((row, col));
     notifyListeners();
   }
 
-  void removeBox(int row,int col){
+  void removeBox(int row, int col) {
     _pickedBox.remove((row, col));
     notifyListeners();
   }
 
-  void clearBox(){
+  void clearBox() {
     _pickedBox.clear();
     notifyListeners();
   }
 
-  bool isBoxSelected(int row,int col){
+  bool isBoxSelected(int row, int col) {
     return _pickedBox.contains((row, col));
   }
 
@@ -215,14 +210,20 @@ class RegisterViewModel extends ChangeNotifier {
     startLoading();
 
     try {
-      final parentRef = FirebaseFirestore.instance.collection('warehouse').doc(address);
-      final docRef = parentRef.collection('warehouses').doc();
+      final warehouseRoot = FirebaseFirestore.instance.collection('warehouse');
+      final existingDocs = await warehouseRoot.where('address', isEqualTo: address).get();
+      DocumentReference docRef;
+
+      if (existingDocs.docs.isNotEmpty) {
+        docRef = existingDocs.docs.first.reference;
+      } else {
+        docRef = warehouseRoot.doc();
+        await docRef.set({'address': address});
+      }
 
       List<String> imageUrls = [];
-
       for (final image in pickedImages) {
-        final ref = FirebaseStorage.instance
-            .ref('warehouses/${docRef.id}/${image.name}');
+        final ref = FirebaseStorage.instance.ref('warehouses/${docRef.id}/${image.name}');
         await ref.putFile(File(image.path));
         final url = await ref.getDownloadURL();
         imageUrls.add(url);
@@ -245,7 +246,7 @@ class RegisterViewModel extends ChangeNotifier {
         },
       );
 
-      await docRef.set(warehouse.toMap());
+      await docRef.collection('warehouses').add(warehouse.toMap());
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("창고가 성공적으로 등록되었습니다.")),

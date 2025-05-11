@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,16 +11,12 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class HomeViewModel extends ChangeNotifier {
   final List<Marker> _markers = [];
-
-  // final List<NMarker> _nMarkers = [];
-
   Warehouse? _selectedWarehouse;
   final Set<String> _favoriteWarehouseIds = {};
   final FavoriteService _favoriteService = FavoriteService();
   final Map<MarkerId, Warehouse> _markerWarehouseMap = {};
 
   List<Marker> get markers => _markers;
-  // List<NMarker> get nMarkers => _nMarkers;
   Warehouse? get selectedWarehouse => _selectedWarehouse;
   Set<String> get favoriteWarehouseIds => _favoriteWarehouseIds;
 
@@ -30,35 +25,35 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   void loadWarehouseMarkers({required void Function(Warehouse) onTapWarehouse}) async {
-    final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
+    final rootSnapshot = await FirebaseFirestore.instance.collection('warehouse').get();
 
     _markers.clear();
 
+    for (final rootDoc in rootSnapshot.docs) {
+      final subSnapshot = await rootDoc.reference.collection('warehouses').get();
 
-    for (var doc in snapshot.docs) {
-      final warehouse = Warehouse.fromDoc(doc);
+      for (final doc in subSnapshot.docs) {
+        final warehouse = Warehouse.fromDoc(doc);
 
-      if (warehouse.images.isNotEmpty && navigatorKey.currentContext != null) {
-        precacheImage(NetworkImage(warehouse.images.first), navigatorKey.currentContext!);
+        if (warehouse.images.isNotEmpty && navigatorKey.currentContext != null) {
+          precacheImage(NetworkImage(warehouse.images.first), navigatorKey.currentContext!);
+        }
+
+        final markerId = MarkerId(warehouse.id);
+        final marker = Marker(
+          markerId: markerId,
+          position: LatLng(warehouse.lat, warehouse.lng),
+          onTap: () {
+            _selectedWarehouse = _markerWarehouseMap[markerId];
+            notifyListeners();
+            RecentWarehouseManager.addWarehouse(warehouse);
+            onTapWarehouse(_selectedWarehouse!);
+          },
+        );
+
+        _markers.add(marker);
+        _markerWarehouseMap[markerId] = warehouse;
       }
-
-      final markerId = MarkerId(warehouse.id);
-      final marker = Marker(
-        markerId: markerId,
-        position: LatLng(warehouse.lat, warehouse.lng),
-        onTap: () {
-          _selectedWarehouse = _markerWarehouseMap[markerId];
-          notifyListeners();
-          RecentWarehouseManager.addWarehouse(warehouse);
-          onTapWarehouse(_selectedWarehouse!);
-        },
-      );
-
-
-      _markers.add(marker);
-
-
-      _markerWarehouseMap[markerId] = warehouse;
     }
     notifyListeners();
   }
@@ -70,7 +65,6 @@ class HomeViewModel extends ChangeNotifier {
 
   void clearMarkers() {
     _markers.clear();
-
     notifyListeners();
   }
 

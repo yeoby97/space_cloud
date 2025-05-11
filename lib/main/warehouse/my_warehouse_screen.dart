@@ -1,5 +1,3 @@
-// TODO : 최적화 및 상태 최상단화
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -22,13 +20,13 @@ class MyWarehouseScreen extends StatelessWidget {
 }
 
 class _MyWarehouseBody extends StatelessWidget {
-  const _MyWarehouseBody();
+  const _MyWarehouseBody({super.key});
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<MyWarehouseViewModel>();
     final formatter = NumberFormat('#,###');
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('내 창고 목록'),
@@ -39,61 +37,61 @@ class _MyWarehouseBody extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => WarehouseRegisterScreen(),
+                  builder: (_) => const WarehouseRegisterScreen(),
                 ),
               );
             },
           ),
         ],
       ),
-      body: Builder(
-        builder: (_) {
-          if (viewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: _buildBody(context, viewModel, formatter),
+    );
+  }
 
-          if (viewModel.error != null) {
-            return Center(child: Text(viewModel.error!));
-          }
+  Widget _buildBody(BuildContext context, MyWarehouseViewModel viewModel, NumberFormat formatter) {
+    if (viewModel.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-          final warehouses = viewModel.warehouses;
+    if (viewModel.error != null) {
+      return Center(child: Text(viewModel.error!, style: const TextStyle(color: Colors.red)));
+    }
 
-          if (warehouses.isEmpty) {
-            return const Center(child: Text('등록된 창고가 없습니다.'));
-          }
+    final warehouses = viewModel.warehouses;
+    if (warehouses.isEmpty) {
+      return const Center(child: Text('등록된 창고가 없습니다.'));
+    }
 
-          return ListView.builder(
-            itemCount: warehouses.length,
-            itemBuilder: (context, index) {
-              final warehouse = warehouses[index];
+    return ListView.builder(
+      itemCount: warehouses.length,
+      itemBuilder: (context, index) {
+        final warehouse = warehouses[index];
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  leading: warehouse.images.isNotEmpty
-                      ? Image.network(
-                    warehouse.images.first,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                  )
-                      : const Icon(Icons.home_work),
-                  title: Text(warehouse.address),
-                  subtitle: Text('₩${formatter.format(warehouse.price)} / ${warehouse.count}칸'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => WarehouseManagement(warehouse: warehouse),
-                      ),
-                    );
-                  },
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ListTile(
+            leading: warehouse.images.isNotEmpty
+                ? Image.network(
+              warehouse.images.first,
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+            )
+                : const Icon(Icons.home_work, size: 40),
+            title: Text(warehouse.address),
+            subtitle: Text('₩${formatter.format(warehouse.price)} / ${warehouse.count}칸'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WarehouseManagement(warehouse: warehouse),
                 ),
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

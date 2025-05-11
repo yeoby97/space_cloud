@@ -28,94 +28,6 @@ class _WarehouseRegisterScreenState extends State<WarehouseRegisterScreen> {
       child: Body(),
     );
   }
-
-  // void upload() async {
-  //   final price = int.tryParse(priceController.text.replaceAll(',', ''));
-  //   final count = int.tryParse(numberController.text);
-  //   final rows = int.tryParse(rowController.text);
-  //   final columns = int.tryParse(colController.text);
-  //
-  //   if (pickedImages == null || pickedImages!.isEmpty ||
-  //       address == null ||
-  //       location == null ||
-  //       detailAddressController.text.trim().isEmpty ||
-  //       price == null || price <= 0 ||
-  //       count == null || count <= 0 ||
-  //       rows == null || rows <= 0 ||
-  //       columns == null || columns <= 0 ||
-  //       rows * columns != count) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("모든 정보를 올바르게 입력해주세요.")),
-  //     );
-  //     return;
-  //   }
-  //
-  //   final user = FirebaseAuth.instance.currentUser;
-  //   if (user == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("로그인이 필요합니다.")),
-  //     );
-  //     return;
-  //   }
-  //
-  //   setState(() => isLoading = true);
-  //
-  //   try {
-  //     final folderName = '${address!}_${detailAddressController.text.trim()}';
-  //     final storageRef = FirebaseStorage.instance.ref().child('warehouses/$folderName');
-  //     List<String> imageUrls = [];
-  //
-  //     for (int i = 0; i < pickedImages!.length; i++) {
-  //       final file = File(pickedImages![i].path);
-  //       final uploadRef = storageRef.child('${i + 1}.jpeg');
-  //       await uploadRef.putFile(file);
-  //       final downloadUrl = await uploadRef.getDownloadURL();
-  //       imageUrls.add(downloadUrl);
-  //     }
-  //
-  //     // 창고 정보 생성
-  //     final warehouse = Warehouse(
-  //       address: address!,
-  //       detailAddress: detailAddressController.text.trim(),
-  //       lat: location!.latitude,
-  //       lng: location!.longitude,
-  //       images: imageUrls,
-  //       price: price,
-  //       count: count,
-  //       createdAt: DateTime.now(),
-  //       ownerId: user.uid,
-  //       layout: {
-  //         'rows': rows,
-  //         'columns': columns,
-  //       },
-  //     );
-  //
-  //     // 창고 문서 저장
-  //     final docRef = await FirebaseFirestore.instance
-  //         .collection('warehouse')
-  //         .add(warehouse.toMap());
-  //
-  //     // 공간 정보 저장
-  //     for (int r = 0; r < rows; r++) {
-  //       for (int c = 0; c < columns; c++) {
-  //         final spaceId = '${String.fromCharCode(65 + r)}${c + 1}';
-  //         await docRef.collection('spaces').doc(spaceId).set({
-  //           'spaceId': spaceId,
-  //         });
-  //       }
-  //     }
-  //
-  //     if (!mounted) return;
-  //
-  //     Navigator.of(context).pop();
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("등록 실패: $e")),
-  //     );
-  //   } finally {
-  //     if (mounted) setState(() => isLoading = false);
-  //   }
-  // }
 }
 
 class Body extends StatelessWidget {
@@ -476,7 +388,7 @@ class _BuildNumberField extends StatelessWidget {
       '창고 갯수': viewModel.countFocusNode,
     };
 
-    setController(viewModel,controller,hint);
+    // setController(viewModel,controller,hint);
     final formatter = this.formatter;
     return Container(
       width: 200,
@@ -539,22 +451,22 @@ class _BuildNumberField extends StatelessWidget {
       default:
     }
   }
-  void setController(RegisterViewModel viewModel,TextEditingController controller,String hint){
-    switch(hint){
-      case '행':
-        controller.text = viewModel.row?.toString() ?? '';
-        break;
-      case '열':
-        controller.text = viewModel.col?.toString() ?? '';
-        break;
-      case '월 대여료':
-        controller.text = viewModel.price?.toString() ?? '';
-        break;
-      case '창고 갯수':
-        controller.text = viewModel.count?.toString() ?? '';
-        break;
-      default:
-    }
-  }
+  // void setController(RegisterViewModel viewModel,TextEditingController controller,String hint){
+  //   switch(hint){
+  //     case '행':
+  //       controller.text = viewModel.row?.toString() ?? '';
+  //       break;
+  //     case '열':
+  //       controller.text = viewModel.col?.toString() ?? '';
+  //       break;
+  //     case '월 대여료':
+  //       controller.text = viewModel.price?.toString() ?? '';
+  //       break;
+  //     case '창고 갯수':
+  //       controller.text = viewModel.count?.toString() ?? '';
+  //       break;
+  //     default:
+  //   }
+  // }
 }
 
