@@ -30,7 +30,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _warehouseViewModel = MyWarehouseViewModel();
-    _warehouseViewModel.loadOnce(); // ✅ 최초 1회만 로딩
+    _warehouseViewModel.startListening(); // ✅ 최초 1회만 로딩
   }
 
   @override

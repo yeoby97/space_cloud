@@ -144,7 +144,6 @@ class RegisterViewModel extends ChangeNotifier {
       final user = _auth.currentUser!;
       final warehouseRoot = _firestore.collection('warehouse');
 
-      // 이미 address가 존재하는지 확인
       final existingDocs = await warehouseRoot.where('address', isEqualTo: address).limit(1).get();
       DocumentReference docRef;
 

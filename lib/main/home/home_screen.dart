@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -22,11 +20,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   GoogleMapController? _mapController;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeViewModel>().loadWarehouseMarkers(
+      context.read<HomeViewModel>().startListeningToWarehouses(
         onTapWarehouse: (_) {
           widget.isBottomSheetOpenNotifier.value = true;
         },
@@ -42,44 +41,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final locationVM = context.watch<MyLocationViewModel>();
-    final homeVM = context.watch<HomeViewModel>();
-    final position = locationVM.currentPosition;
-    final selectedWarehouse = homeVM.selectedWarehouse;
-
     return Scaffold(
       body: Stack(
         children: [
-          position == null ? const Center(child: CircularProgressIndicator()) : _buildGoogleMap(position, homeVM),
+          Consumer2<MyLocationViewModel, HomeViewModel>(
+            builder: (context, locationVM, homeVM, child) {
+              final position = locationVM.currentPosition;
+              if (position == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return GoogleMap(
+                mapToolbarEnabled: false,
+                zoomControlsEnabled: false,
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(position.latitude, position.longitude),
+                  zoom: 16,
+                ),
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                },
+                markers: Set<Marker>.from(homeVM.markers),
+              );
+            },
+          ),
           _buildSearchBox(),
           SafeArea(child: _buildLocationButton()),
-          if (selectedWarehouse != null)
-            CustomBottomSheet(
-              warehouse: selectedWarehouse,
-              isOpenNotifier: widget.isBottomSheetOpenNotifier,
-              onClose: () {
-                widget.isBottomSheetOpenNotifier.value = false;
-                homeVM.clearSelectedWarehouse();
-              },
-              onTap: () => _navigateToWarehouseManagement(selectedWarehouse),
-            ),
+          Selector<HomeViewModel, Warehouse?>(
+            selector: (_, vm) => vm.selectedWarehouse,
+            builder: (context, selectedWarehouse, _) {
+              if (selectedWarehouse == null) return const SizedBox.shrink();
+              return CustomBottomSheet(
+                warehouse: selectedWarehouse,
+                isOpenNotifier: widget.isBottomSheetOpenNotifier,
+                onClose: () {
+                  widget.isBottomSheetOpenNotifier.value = false;
+                  context.read<HomeViewModel>().clearSelectedWarehouse();
+                },
+                onTap: () => _navigateToWarehouseManagement(selectedWarehouse),
+              );
+            },
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildGoogleMap(Position position, HomeViewModel homeVM) {
-    return GoogleMap(
-      mapToolbarEnabled: false,
-      zoomControlsEnabled: false,
-      myLocationEnabled: true,
-      myLocationButtonEnabled: false,
-      initialCameraPosition: CameraPosition(
-        target: LatLng(position.latitude, position.longitude),
-        zoom: 16,
-      ),
-      onMapCreated: (controller) => _mapController ??= controller,
-      markers: Set<Marker>.from(homeVM.markers),
     );
   }
 
@@ -92,8 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: GestureDetector(
             onTap: _onSearchTap,
             child: Container(
-              width: double.infinity,
               height: 60,
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -162,12 +167,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-    // _nMapController?.updateCamera(
-    //   NCameraUpdate.withParams(
-    //     target: NLatLng(position.latitude, position.longitude),
-    //     zoom: 16,
-    //   ),
-    // );
   }
 
   Future<void> _onSearchTap() async {
@@ -175,16 +174,13 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const SearchScreen()),
     );
 
-    final LatLng? location = result?['location'];
-    if (location != null) {
+    if (result is Map<String, dynamic> && result['location'] is LatLng) {
+      final LatLng location = result['location'];
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(target: location, zoom: 16),
         ),
       );
-      // _nMapController?.updateCamera(
-      //   NCameraUpdate.withParams(target: NLatLng(location.latitude, location.longitude), zoom: 16),
-      // );
     }
   }
 

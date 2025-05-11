@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -11,7 +12,7 @@ class MyWarehouseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _MyWarehouseBody(); // Provider already injected
+    return const _MyWarehouseBody();
   }
 }
 
@@ -67,12 +68,22 @@ class _MyWarehouseBody extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: ListTile(
             leading: warehouse.images.isNotEmpty
-                ? Image.network(
-              warehouse.images.first,
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                ? ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: CachedNetworkImage(
+                imageUrl: warehouse.images.first,
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => const Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  ),
+                ),
+                errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
+              ),
             )
                 : const Icon(Icons.home_work, size: 40),
             title: Text(warehouse.address),

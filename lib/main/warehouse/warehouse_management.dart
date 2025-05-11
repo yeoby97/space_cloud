@@ -6,21 +6,21 @@ import 'package:intl/intl.dart';
 import '../../data/warehouse.dart';
 
 class WarehouseManagement extends StatefulWidget {
-  final Warehouse warehouse;  // 창고 객체
-  const WarehouseManagement({super.key, required this.warehouse});  // 창고 정보 이전 screen에서 받앙모
+  final Warehouse warehouse;
+  const WarehouseManagement({super.key, required this.warehouse});
 
   @override
   State<WarehouseManagement> createState() => _WarehouseManagementState();
 }
 
 class _WarehouseManagementState extends State<WarehouseManagement> {
-  final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');  // 날짜 형식
-  DateTime? startDate;  // 시작날짜
-  DateTime? endDate;    // 끝날짜
+  final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
+  DateTime? startDate;
+  DateTime? endDate;
 
   Future<void> _pickStartDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(  //
+    final picked = await showDatePicker(
       context: context,
       initialDate: startDate ?? now,
       firstDate: now,
@@ -49,13 +49,13 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
       return;
     }
 
-    await FirebaseFirestore.instance    // 현제 창고 컬렉션 내의 unavailable 컬렉션에
+    await FirebaseFirestore.instance
         .collection('warehouse')
         .doc(widget.warehouse.id)
-        .collection('unavailable')    // 사용 불가 날짜 설정
+        .collection('unavailable')
         .add({
-      'start': startDate!.toIso8601String(),  // 시작날짜
-      'end': endDate!.toIso8601String(),    // 끝날짜
+      'start': startDate!.toIso8601String(),
+      'end': endDate!.toIso8601String(),
     });
 
     setState(() {
@@ -64,7 +64,7 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
     });
   }
 
-  Stream<QuerySnapshot> _getUnavailablePeriods() {    // 사용 불가 날짜 가져오기
+  Stream<QuerySnapshot> _getUnavailablePeriods() {
     return FirebaseFirestore.instance
         .collection('warehouse')
         .doc(widget.warehouse.id)
@@ -251,8 +251,8 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
 
                           if (confirm == true) {
                             await _cancelReservation(spaceId, resDoc.id);
-                            Navigator.pop(context); // 기존 다이얼로그 닫기
-                            _showReservationDialog(spaceId, reservations.where((e) => e.id != resDoc.id).toList()); // 다시 열기
+                            Navigator.pop(context);
+                            _showReservationDialog(spaceId, reservations.where((e) => e.id != resDoc.id).toList());
                           }
                         },
                         icon: const Icon(Icons.cancel, size: 16, color: Colors.red),
@@ -278,7 +278,7 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('창고 관리')),
-      body: SingleChildScrollView(  // ✅ 스크롤 가능하게 만듦
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -300,7 +300,6 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
               const Text('전체 예약 내역', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
 
-              // ✅ 스크롤 가능한 공간 안에서만 ListView.builder 사용 가능
               StreamBuilder<QuerySnapshot>(
                 stream: _getSpaces(),
                 builder: (context, snapshot) {
@@ -308,30 +307,30 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
 
                   final spaces = snapshot.data!.docs;
 
-                  return Column(      // 예약목록 컬럼
+                  return Column(
                     children: List.generate(spaces.length, (index) {
-                      final space = spaces[index];       // 공간
-                      final spaceId = space['spaceId'];  // 공간 id
+                      final space = spaces[index];
+                      final spaceId = space['spaceId'];
 
                       return FutureBuilder<QuerySnapshot>(
                         future: FirebaseFirestore.instance
-                            .collection('warehouse')    // 현제창고의 공간들에서 예약목록 가져오기
+                            .collection('warehouse')
                             .doc(widget.warehouse.id)
                             .collection('spaces')
                             .doc(space.id)
                             .collection('reservations')
-                            .orderBy('start')     // 시작날짜 기준으로 정렬
+                            .orderBy('start')
                             .get(),
-                        builder: (context, resSnap) {       // 빌더 - 내가 불러온 context랑 스냅샷을 매개변수로 받아 함수실행
-                          if (!resSnap.hasData) return const SizedBox();    // 스탭샷에 데이터 없으면 빈박스
+                        builder: (context, resSnap) {
+                          if (!resSnap.hasData) return const SizedBox();
 
-                          final reservations = resSnap.data!.docs;  // resSnap.data - 문서들 가져오고
-                          if (reservations.isEmpty) {   // 만약 예약목록이 없으면
-                            usageMap[spaceId] = false;  // 사용중 x 아 사용중인지 확인하려고 ??
-                            return SizedBox();    //
+                          final reservations = resSnap.data!.docs;
+                          if (reservations.isEmpty) {
+                            usageMap[spaceId] = false;
+                            return SizedBox();
                           }
 
-                          final latest = reservations.first;    // 최근예약 이미 정렬됐기 떄문에 first가 가장 최근
+                          final latest = reservations.first;
                           final start = DateTime.parse(latest['start']);
                           final end = DateTime.parse(latest['end']);
                           final reservedBy = latest['reservedBy'];
@@ -358,15 +357,15 @@ class _WarehouseManagementState extends State<WarehouseManagement> {
                                         icon: const Icon(Icons.play_circle_fill, size: 16),
                                         label: const Text('사용 중'),
                                         style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.red,                     // 테두리/글자색
-                                          side: const BorderSide(color: Colors.red),       // 테두리
+                                          foregroundColor: Colors.red,
+                                          side: const BorderSide(color: Colors.red),
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                           textStyle: const TextStyle(fontSize: 13),
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                         ),
                                       ),
                                     SizedBox(width: 20,),
-                                    if (reservations.length > 0)  // 사용 중인 예약 빼고 대기 예약이 있다면
+                                    if (reservations.length > 0)
                                       OutlinedButton.icon(
                                         onPressed: () => _showReservationDialog(spaceId, reservations),
                                         icon: const Icon(Icons.event_note, size: 16),

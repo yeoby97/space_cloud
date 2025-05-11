@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:async/async.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -9,56 +11,79 @@ class MyWarehouseViewModel extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<Warehouse> _warehouses = [];
+  StreamSubscription? _subscription; // Stream<dynamic> 이므로 구체 타입 생략
   bool _isLoading = false;
   String? _error;
-  bool _hasLoaded = false;
 
   List<Warehouse> get warehouses => _warehouses;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadOnce() async {
-    if (_hasLoaded) return;
-    _hasLoaded = true;
-    await _loadWarehouses();
-  }
-
-  Future<void> refresh() async {
-    _hasLoaded = false;
-    await _loadWarehouses();
-  }
-
-  Future<void> _loadWarehouses() async {
-    _setLoading(true);
-
+  Future<void> startListening() async {
     final user = _auth.currentUser;
     if (user == null) {
       _setError('로그인이 필요합니다.');
-      _setLoading(false);
       return;
     }
 
+    _setLoading(true);
+
     try {
       final rootSnapshot = await _firestore.collection('warehouse').get();
-      final List<Warehouse> allWarehouses = [];
+      final List<Stream<QuerySnapshot>> streams = [];
 
-      for (final doc in rootSnapshot.docs) {
-        final subSnapshot = await doc.reference.collection('warehouses').get();
-        for (final wDoc in subSnapshot.docs) {
-          final data = wDoc.data();
-          if (data['ownerId'] == user.uid) {
-            allWarehouses.add(Warehouse.fromDoc(wDoc));
-          }
-        }
+      for (final rootDoc in rootSnapshot.docs) {
+        final stream = rootDoc.reference
+            .collection('warehouses')
+            .orderBy('createdAt', descending: true)
+            .snapshots();
+
+        streams.add(stream);
       }
 
-      _warehouses = allWarehouses;
-      _error = null;
+      final mergedStream = StreamGroup.merge(streams);
+
+      _subscription?.cancel();
+      _subscription = mergedStream.listen((event) {
+        final List<Warehouse> userWarehouses = [];
+
+        if (event is QuerySnapshot) {
+          for (final doc in event.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            if (data['ownerId'] == user.uid) {
+              userWarehouses.add(Warehouse.fromDoc(doc));
+            }
+          }
+
+          final Map<String, Warehouse> unique = {
+            for (var w in _warehouses) w.id: w,
+            for (var w in userWarehouses) w.id: w,
+          };
+
+          _warehouses = unique.values.toList()
+            ..sort((a, b) =>
+                (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+
+          notifyListeners();
+        }
+      });
+
+      _setError(null);
     } catch (e) {
       _setError('에러 발생: $e');
     } finally {
       _setLoading(false);
     }
+  }
+
+  Future<void> refresh() async {
+    stopListening();
+    await startListening();
+  }
+
+  void stopListening() {
+    _subscription?.cancel();
+    _subscription = null;
   }
 
   void _setLoading(bool value) {
@@ -73,5 +98,11 @@ class MyWarehouseViewModel extends ChangeNotifier {
       _error = message;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    stopListening();
+    super.dispose();
   }
 }

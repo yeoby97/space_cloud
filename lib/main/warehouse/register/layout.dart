@@ -24,7 +24,7 @@ class Layout extends StatelessWidget {
             scaleEnabled: true,
             minScale: 0.2,
             maxScale: 4.0,
-            constrained: false, // 중요: 크기를 자식에 맡김
+            constrained: false,
             child: Container(
               padding: EdgeInsets.fromLTRB(270, 570, 680, 2250),
               width: width,
