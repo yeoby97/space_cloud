@@ -1,12 +1,15 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../data/warehouse.dart';
 import '../../home/search/search_screen.dart';
 
 class RegisterViewModel extends ChangeNotifier {
-
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -138,26 +141,29 @@ class RegisterViewModel extends ChangeNotifier {
   void upload(BuildContext context) async {
     final address = this.address;
     final location = this.location;
-    if (address == null || location == null){
+    if (address == null || location == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("주소를 선택해주세요.")),
       );
       return;
     }
+
     final detailAddress = this.detailAddress;
-    if (detailAddress == null || detailAddress.isEmpty){
+    if (detailAddress == null || detailAddress.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("상세 주소를 입력해주세요.")),
       );
       return;
     }
+
     final price = int.tryParse(priceController.text.replaceAll(',', ''));
-    if (price == null || price <= 0){
+    if (price == null || price <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("월 대여료를 올바르게 입력해주세요.")),
       );
       return;
     }
+
     final count = int.tryParse(countController.text);
     if (count == null || count <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -165,6 +171,7 @@ class RegisterViewModel extends ChangeNotifier {
       );
       return;
     }
+
     final rows = int.tryParse(rowController.text);
     if (rows == null || rows <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -172,6 +179,7 @@ class RegisterViewModel extends ChangeNotifier {
       );
       return;
     }
+
     final columns = int.tryParse(colController.text);
     if (columns == null || columns <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -179,6 +187,7 @@ class RegisterViewModel extends ChangeNotifier {
       );
       return;
     }
+
     final pickedImages = images;
     if (pickedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -186,6 +195,7 @@ class RegisterViewModel extends ChangeNotifier {
       );
       return;
     }
+
     if (_pickedBox.length != count) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("선택한 상자 수가 맞지 않습니다.")),
@@ -193,19 +203,65 @@ class RegisterViewModel extends ChangeNotifier {
       return;
     }
 
-    // 조건들 다 확인했으니까 이제 파이어베이스 불러와서 저장 시작
     final FirebaseAuth auth = FirebaseAuth.instance;
     final user = auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("로그인이 필요합니다.")),
       );
+      return;
     }
 
-    final storage = FirebaseStorage.instance;
+    startLoading();
 
+    try {
+      final parentRef = FirebaseFirestore.instance.collection('warehouse').doc(address);
+      final docRef = parentRef.collection('warehouses').doc();
 
+      List<String> imageUrls = [];
+
+      for (final image in pickedImages) {
+        final ref = FirebaseStorage.instance
+            .ref('warehouses/${docRef.id}/${image.name}');
+        await ref.putFile(File(image.path));
+        final url = await ref.getDownloadURL();
+        imageUrls.add(url);
+      }
+
+      final warehouse = Warehouse(
+        address: address,
+        detailAddress: detailAddress,
+        count: count,
+        createdAt: DateTime.now(),
+        images: imageUrls,
+        lat: location.latitude,
+        lng: location.longitude,
+        price: price,
+        ownerId: user.uid,
+        layout: {
+          'rows': rows,
+          'columns': columns,
+          'boxes': _pickedBox.map((e) => {'row': e.$1, 'col': e.$2}).toList(),
+        },
+      );
+
+      await docRef.set(warehouse.toMap());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("창고가 성공적으로 등록되었습니다.")),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("등록 중 오류 발생: $e")),
+      );
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
+
   RegisterViewModel();
 
+  get warehouse => null;
 }

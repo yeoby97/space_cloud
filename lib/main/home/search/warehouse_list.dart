@@ -43,11 +43,11 @@ class WarehouseList extends StatelessWidget {
                 final distanceKm = (warehouse['distance'] / 1000).toStringAsFixed(2);
                 return ListTile(
                   leading: const Icon(Icons.warehouse),
-                  title: Text(warehouse['name'] ?? ''),
+                  title: Text(warehouse['name']),
                   subtitle: Text("$distanceKm km 거리"),
                   onTap: () {
                     Navigator.of(context).pop({
-                      'location': LatLng(warehouse['lat'], warehouse['lng']),
+                      'location': warehouse['latLng'] as LatLng,
                       'address': warehouse['name'],
                     });
                   },

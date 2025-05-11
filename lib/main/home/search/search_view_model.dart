@@ -1,26 +1,24 @@
-// TODO : 최적화 및 상태 최상단화 및 보안 강화
+// TODO : 최적화 및 상태 최상단화
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart';
 import 'package:geolocator/geolocator.dart';
 
 class SearchViewModel extends ChangeNotifier {
-  final String _clientId;
-  final String _clientSecret;
+  final GoogleMapsPlaces _places;
   final TextEditingController controller = TextEditingController();
 
-  List<Map<String, dynamic>> predictions = [];
+  List<Prediction> predictions = [];
   List<Map<String, dynamic>> nearbyPlaces = [];
   bool isLoading = false;
 
   static const double _maxDistanceMeters = 10000;
   Timer? _debounce;
 
-  SearchViewModel(this._clientId, this._clientSecret);
+  SearchViewModel(String apiKey) : _places = GoogleMapsPlaces(apiKey: apiKey);
 
   void onChanged(String value) {
     _debounce?.cancel();
@@ -32,7 +30,12 @@ class SearchViewModel extends ChangeNotifier {
         return;
       }
 
-      await _fetchNaverPredictions(value);
+      final response = await _places.autocomplete(value, language: 'ko', components: [Component(Component.country, "kr")]);
+      if (response.isOkay) {
+        predictions = response.predictions;
+      }
+
+      await _loadNearbyFromSearch(value);
       notifyListeners();
     });
   }
@@ -50,41 +53,16 @@ class SearchViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _fetchNaverPredictions(String query) async {
-    final encodedQuery = Uri.encodeQueryComponent(query);
-    final uri = Uri.parse(
-        'https://openapi.naver.com/v1/search/local.json?query=$encodedQuery&display=5'
-    );
-
-    try {
-      final response = await http.get(uri, headers: {
-        'X-Naver-Client-Id': _clientId,
-        'X-Naver-Client-Secret': _clientSecret,
-      });
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final items = data['items'] as List;
-        print(data);
-        predictions = items.map((item) {
-          return {
-            'title': _stripHtml(item['title']),
-            'address': item['address'],
-            'mapx': double.tryParse(item['mapx']) ?? 0.0,
-            'mapy': double.tryParse(item['mapy']) ?? 0.0,
-          };
-        }).toList();
-      } else {
-        predictions = [];
-      }
-    } catch (_) {
-      predictions = [];
+  Future<void> _loadNearbyFromSearch(String query) async {
+    final search = await _places.searchByText(query);
+    if (search.isOkay && search.results.isNotEmpty) {
+      final result = search.results.first.geometry!.location;
+      await _fetchWarehousesNearby(LatLng(result.lat, result.lng));
     }
   }
 
   Future<void> _fetchWarehousesNearby(LatLng base) async {
-    final snapshot =
-    await FirebaseFirestore.instance.collection('warehouse').get();
+    final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
 
     final filtered = snapshot.docs.map((doc) {
       final data = doc.data();
@@ -112,11 +90,9 @@ class SearchViewModel extends ChangeNotifier {
 
   Future<LatLng?> _getCurrentLocation() async {
     final permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
       final result = await Geolocator.requestPermission();
-      if (result != LocationPermission.whileInUse &&
-          result != LocationPermission.always) {
+      if (result != LocationPermission.whileInUse && result != LocationPermission.always) {
         return null;
       }
     }
@@ -129,15 +105,5 @@ class SearchViewModel extends ChangeNotifier {
     _debounce?.cancel();
     controller.dispose();
     super.dispose();
-  }
-
-  String _stripHtml(String htmlText) {
-    return htmlText.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-  }
-
-  Map<String, double> convertTM128toWGS84(double mapx, double mapy) {
-    final lng = mapx * 1e-7;
-    final lat = mapy * 1e-7;
-    return {'lat': lat, 'lng': lng};
   }
 }

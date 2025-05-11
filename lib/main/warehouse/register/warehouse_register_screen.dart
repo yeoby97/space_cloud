@@ -267,7 +267,9 @@ class WarehouseRegisterBody extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: FloatingActionButton.extended(
-                        onPressed: ()=>(),
+                        onPressed: () => {
+                          viewModel.upload(context)
+                        },
                         label: const Text("등록", style: TextStyle(fontSize: 16)),
                         icon: const Icon(Icons.check),
                       ),
