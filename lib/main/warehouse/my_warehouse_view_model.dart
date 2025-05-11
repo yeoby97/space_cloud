@@ -34,6 +34,7 @@ class MyWarehouseViewModel extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) {
       _setError('로그인이 필요합니다.');
+      _setLoading(false);
       return;
     }
 
@@ -52,7 +53,7 @@ class MyWarehouseViewModel extends ChangeNotifier {
       }
 
       _warehouses = allWarehouses;
-      _setError(null);
+      _error = null;
     } catch (e) {
       _setError('에러 발생: $e');
     } finally {
@@ -61,12 +62,16 @@ class MyWarehouseViewModel extends ChangeNotifier {
   }
 
   void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
+    if (_isLoading != value) {
+      _isLoading = value;
+      notifyListeners();
+    }
   }
 
   void _setError(String? message) {
-    _error = message;
-    notifyListeners();
+    if (_error != message) {
+      _error = message;
+      notifyListeners();
+    }
   }
 }

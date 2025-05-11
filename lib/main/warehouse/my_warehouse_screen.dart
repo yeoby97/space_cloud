@@ -6,45 +6,17 @@ import '../warehouse/warehouse_management.dart';
 import 'register/warehouse_register_screen.dart';
 import 'my_warehouse_view_model.dart';
 
-class MyWarehouseScreen extends StatefulWidget {
+class MyWarehouseScreen extends StatelessWidget {
   const MyWarehouseScreen({super.key});
 
   @override
-  State<MyWarehouseScreen> createState() => _MyWarehouseScreenState();
-}
-
-class _MyWarehouseScreenState extends State<MyWarehouseScreen> {
-  late MyWarehouseViewModel viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-    viewModel = MyWarehouseViewModel();
-    viewModel.loadOnce();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: viewModel,
-      child: const _MyWarehouseBody(),
-    );
+    return const _MyWarehouseBody(); // Provider already injected
   }
 }
 
-class _MyWarehouseBody extends StatefulWidget {
+class _MyWarehouseBody extends StatelessWidget {
   const _MyWarehouseBody({super.key});
-
-  @override
-  State<_MyWarehouseBody> createState() => _MyWarehouseBodyState();
-}
-
-class _MyWarehouseBodyState extends State<_MyWarehouseBody> {
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    context.read<MyWarehouseViewModel>().loadOnce();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +34,6 @@ class _MyWarehouseBodyState extends State<_MyWarehouseBody> {
               final result = await Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const WarehouseRegisterScreen()),
               );
-
-              // 등록 완료 후 새로고침
               if (result == true) {
                 await context.read<MyWarehouseViewModel>().refresh();
               }

@@ -10,6 +10,7 @@ import 'package:space_cloud/main/home/home_view_model.dart';
 import 'package:space_cloud/main/home/my_location/my_location_view_model.dart';
 import 'data/user_view_model.dart';
 import 'firebase/firebase_options.dart';
+import 'main/warehouse/my_warehouse_view_model.dart';
 
 void main() async {
   WidgetsBinding binding = WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<UserViewModel>.value(value: userVM),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
+        ChangeNotifierProvider(create: (_) => MyWarehouseViewModel()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

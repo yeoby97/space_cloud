@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:provider/provider.dart';
 
 import 'package:space_cloud/main/warehouse/my_warehouse_screen.dart';
 import 'package:space_cloud/main/info/info_screen.dart';
@@ -24,6 +24,21 @@ class _MainScreenState extends State<MainScreen> {
   DateTime? _lastBackPressed;
   final ValueNotifier<bool> _isBottomSheetOpen = ValueNotifier(false);
 
+  late final MyWarehouseViewModel _warehouseViewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _warehouseViewModel = MyWarehouseViewModel();
+    _warehouseViewModel.loadOnce(); // ✅ 최초 1회만 로딩
+  }
+
+  @override
+  void dispose() {
+    _warehouseViewModel.dispose(); // ✅ 메모리 정리
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -43,9 +58,9 @@ class _MainScreenState extends State<MainScreen> {
       case 0:
         return HomeScreen(isBottomSheetOpenNotifier: _isBottomSheetOpen);
       case 1:
-        return ChangeNotifierProvider(
-          create: (_) => MyWarehouseViewModel(),
-          child: const MyWarehouseScreen(),
+        return ChangeNotifierProvider.value(
+          value: _warehouseViewModel,
+          child: const MyWarehouseScreen(), // ✅ Provider는 여기서 주입됨
         );
       case 2:
         return const ListScreen();
