@@ -144,14 +144,17 @@ class RegisterViewModel extends ChangeNotifier {
       final user = _auth.currentUser!;
       final warehouseRoot = _firestore.collection('warehouse');
 
-      final existingDocs = await warehouseRoot.where('address', isEqualTo: address).limit(1).get();
+      final existingDocs = await warehouseRoot
+          .where('lat', isEqualTo: location!.latitude)
+          .where('lng', isEqualTo: location!.longitude)
+          .get();
       DocumentReference docRef;
 
       if (existingDocs.docs.isNotEmpty) {
         docRef = existingDocs.docs.first.reference;
       } else {
         docRef = warehouseRoot.doc();
-        await docRef.set({'address': address});
+        await docRef.set({'lat': location!.latitude, 'lng': location!.longitude});
       }
 
       final imageUrls = await Future.wait(_images.map((image) async {
