@@ -4,6 +4,7 @@ class AppUser {
   final String displayName; // 유저 이름 null x
   final String photoURL; // 프로필 UrL null x -  프로필 없더라도 기본 이미지 Url 넣어줌
   final String phoneNumber; // 휴대폰번호
+  final bool advertisement; // 광고 수신 여부
 
   AppUser({
     required this.uid,
@@ -11,6 +12,7 @@ class AppUser {
     required this.email,
     required this.displayName,
     required this.photoURL,
+    required this.advertisement,
   });
 
   Map<String, dynamic> toMap() { // 클래스를 맵으로 변환(json형식)
@@ -20,6 +22,7 @@ class AppUser {
       'displayName': displayName,
       'photoURL': photoURL,
       'phoneNumber': phoneNumber,
+      'advertisement': advertisement,
     };
   }
 
@@ -30,6 +33,7 @@ class AppUser {
       displayName: map['displayName'],
       photoURL: map['photoURL'],
       phoneNumber: map['phoneNumber'],
+      advertisement: map['advertisement'] ?? false,
     );
   }
 
@@ -38,6 +42,7 @@ class AppUser {
     String? email,
     String? phoneNumber,
     String? photoURL,
+    bool? advertisement,
   }) {
     return AppUser(
       uid: uid,
@@ -45,6 +50,7 @@ class AppUser {
       displayName: displayName ?? this.displayName,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       photoURL: photoURL ?? this.photoURL,
+      advertisement: advertisement ?? this.advertisement,
     );
   }
 }

@@ -1,14 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:space_cloud/sign/signin/signin_screen.dart';
+import 'package:space_cloud/sign/signup/signup_screen.dart';
 import '../../data/user.dart';
 
 class SignInViewModel extends ChangeNotifier {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final GoogleSignIn _googleSignIn;
-
+  bool _advertisement = false;
   bool _isLoading = false;
   String? _error;
 
@@ -23,11 +27,31 @@ class SignInViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<bool> signInWithGoogle() async {
+  Future<bool> signInWithGoogle(BuildContext context) async {
     _setLoading(true);
+
     try {
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return _complete(false);
+
+      final users = await _firestore.collection('users')
+          .where('email', isEqualTo: googleUser.email)
+          .limit(1)
+          .get();
+
+      if(users.docs.isEmpty) {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SignupScreen(),
+          ),
+        );
+        if (result == null){
+          _googleSignIn.signOut();
+          return _complete(false);
+        }
+        _advertisement = result['advertisement'] ?? false;
+      }
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -58,6 +82,7 @@ class SignInViewModel extends ChangeNotifier {
         displayName: user.displayName ?? '사용자',
         photoURL: user.photoURL ?? '',
         phoneNumber: user.phoneNumber ?? '01012345678',
+        advertisement: _advertisement,
       );
       await docRef.set(newUser.toMap());
     }

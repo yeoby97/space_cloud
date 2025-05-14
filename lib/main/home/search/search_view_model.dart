@@ -62,12 +62,19 @@ class SearchViewModel extends ChangeNotifier {
   }
 
   Future<void> _fetchWarehousesNearby(LatLng base) async {
-    final snapshot = await FirebaseFirestore.instance.collection('warehouse').get();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('warehouse')
+        .get();
 
-    final filtered = snapshot.docs.map((doc) {
+    final filterList = <Map<String, dynamic>>[];
+
+    for (var doc in snapshot.docs) {
       final data = doc.data();
+      // data 안에 lat, lng가 있는지 확인 없으면 null 반환
       if (!data.containsKey('lat') || !data.containsKey('lng')) return null;
 
+
+      // 거리값 계산
       final distance = Geolocator.distanceBetween(
         base.latitude,
         base.longitude,
@@ -75,17 +82,40 @@ class SearchViewModel extends ChangeNotifier {
         data['lng'],
       );
 
+      // 일정 거리 넘으면 null 반환
       if (distance > _maxDistanceMeters) return null;
 
-      return {
-        'name': data['address'] ?? doc.id,
-        'distance': distance,
-        'latLng': LatLng(data['lat'], data['lng']),
-      };
-    }).whereType<Map<String, dynamic>>().toList();
+      // 일정 거리 안에 있으면
 
-    filtered.sort((a, b) => a['distance'].compareTo(b['distance']));
-    nearbyPlaces = filtered;
+      final warehousesSnapshot = await FirebaseFirestore.instance
+          .collection('warehouse')
+          .doc(doc.id)
+          .collection('warehouses')
+          .get();
+
+      for (var warehouseDoc in warehousesSnapshot.docs) {
+        final warehouseData = warehouseDoc.data();
+
+        filterList.add({
+          'name': warehouseData['address'],
+          'distance': distance,
+          'latLng': LatLng(warehouseData['lat'], warehouseData['lng']),
+        });
+      }
+
+      // 반환해줄 정보
+      //   return {
+      //     'name': data['address'] ?? doc.id,
+      //     'distance': distance,
+      //     'latLng': LatLng(data['lat'], data['lng']),
+      //   };
+      // }
+      //
+      // filtered.sort((a, b) => a['distance'].compareTo(b['distance']));
+      // nearbyPlaces = filtered;
+    }
+    filterList.sort((a, b) => a['distance'].compareTo(b['distance']));
+    nearbyPlaces = filterList;
   }
 
   Future<LatLng?> _getCurrentLocation() async {

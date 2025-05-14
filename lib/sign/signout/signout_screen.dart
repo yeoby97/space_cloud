@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 
 import '../../main/info/recent_warehouse_list/recent_warehouse_manager.dart';
@@ -22,9 +23,13 @@ void showLogoutDialog(BuildContext context) {
         TextButton(
           onPressed: () async {
             Navigator.pop(context);
+
+            await GoogleSignIn().signOut();
             await FirebaseAuth.instance.signOut();
             await RecentWarehouseManager.clearLocalRecentWarehouses();
+
             if (context.mounted) {
+
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
                   builder: (_) => MultiProvider(

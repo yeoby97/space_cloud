@@ -38,7 +38,7 @@ class _SignInBody extends StatelessWidget {
     final navigator = Navigator.of(context);
     final viewModel = context.read<SignInViewModel>();
 
-    final success = await viewModel.signInWithGoogle();
+    final success = await viewModel.signInWithGoogle(context);
 
     if (success) {
       await FirebaseAuth.instance.authStateChanges().firstWhere((user) => user != null);
