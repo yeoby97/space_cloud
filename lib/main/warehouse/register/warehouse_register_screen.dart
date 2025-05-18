@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:space_cloud/main/warehouse/register/warehouse_register_view_model.dart';
 
+import 'blueprint/blueprint_editor_screen.dart';
 import 'layout.dart';
 
 class WarehouseRegisterScreen extends StatefulWidget {
@@ -120,6 +121,20 @@ class WarehouseRegisterBody extends StatelessWidget {
                     _BuildNumberField(hint: '월 대여료', unit: '₩', formatter: priceFormat, controller: viewModel.priceController),
                     const SizedBox(height: 12),
                     _BuildNumberField(hint: '창고 갯수', unit: '개', controller: viewModel.countController),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FloatingActionButton.extended(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const BlueprintEditorScreen()),
+                          );
+                        },
+                        label: const Text("건물 도면 그리기", style: TextStyle(fontSize: 16)),
+                        icon: const Icon(Icons.check),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [

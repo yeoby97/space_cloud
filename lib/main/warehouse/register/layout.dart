@@ -11,7 +11,6 @@ class Layout extends StatelessWidget {
     double height = viewModel.row! * 70 + 3000;
     double width = (viewModel.col! >= 5 ? viewModel.col! : 5) * 70 + 1000;
 
-
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {

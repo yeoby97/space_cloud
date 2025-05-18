@@ -11,6 +11,7 @@ import 'package:space_cloud/main/home/my_location/my_location_view_model.dart';
 import 'data/user_view_model.dart';
 import 'firebase/firebase_options.dart';
 import 'main/warehouse/my_warehouse_view_model.dart';
+import 'main/warehouse/register/blueprint/touch_counter.dart';
 
 void main() async {
   WidgetsBinding binding = WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => MyLocationViewModel()),
         ChangeNotifierProvider(create: (_) => MyWarehouseViewModel()),
+        ChangeNotifierProvider(create: (_) => TouchCounterNotifier()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
