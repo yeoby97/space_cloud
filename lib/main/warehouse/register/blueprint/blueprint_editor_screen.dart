@@ -1,28 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // ✅ provider 패키지로 변경
+import 'package:provider/provider.dart';
 import 'package:space_cloud/main/warehouse/register/blueprint/touch_counter.dart';
 
 import 'grid_painter.dart';
 import 'line.dart';
+import 'dart:math';
 
 class BlueprintEditorScreen extends StatefulWidget {
   const BlueprintEditorScreen({super.key});
+
   @override
   State<BlueprintEditorScreen> createState() => _BlueprintEditorScreenState();
 }
 
 class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
-  List<Line> _lines = [];
+  late var _lines = <Line>[]; // 👈 참조 갱신 가능하게 변경
+  late Set<Offset> _doors = {};
   Offset? _startPoint;
   Offset? _previewPoint;
   final double _gridSize = 50.0;
   final _transform = TransformationController();
-
-  Offset snapToGrid(Offset point) {
-    final x = (point.dx / _gridSize).round() * _gridSize;
-    final y = (point.dy / _gridSize).round() * _gridSize;
-    return Offset(x, y);
-  }
 
   void _onPanStart(DragStartDetails details) {
     final local = details.localPosition;
@@ -41,12 +38,160 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
   void _onPanEnd(DragEndDetails details) {
     if (_startPoint != null && _previewPoint != null) {
       final snappedEnd = snapToGrid(_previewPoint!);
+      final newLine = Line(_startPoint!, snappedEnd);
+
+      final overlaps = _lines.any((existing) => linesIntersectButNotAtEndpoints(newLine, existing));
+      if (overlaps) {
+        setState(() {
+          _startPoint = null;
+          _previewPoint = null;
+        });
+        return;
+      }
+
       setState(() {
-        _lines.add(Line(_startPoint!, snappedEnd));
+        _lines.add(newLine);
         _startPoint = null;
         _previewPoint = null;
       });
     }
+  }
+
+  void _handleDoubleTap(TapDownDetails details) {
+    final sceneTap = _transform.toScene(details.localPosition);
+    final nearbyLine = findNearestLine(sceneTap, 15.0);
+    if (nearbyLine == null) return;
+
+    final projected = projectPointOntoSegment(sceneTap, nearbyLine.start, nearbyLine.end);
+    final clamped = clampPointOnLineSegment(projected, nearbyLine.start, nearbyLine.end, 10.0);
+
+    final existing = _doors.firstWhere(
+          (door) => (door - clamped).distance < 15.0,
+      orElse: () => Offset.infinite,
+    );
+
+    setState(() {
+      if (existing != Offset.infinite) {
+        _doors.remove(existing);
+      } else {
+        _doors.add(clamped);
+      }
+      _doors = Set.of(_doors);
+    });
+  }
+
+  void _handleLongPress(LongPressStartDetails details) {
+    final sceneTap = _transform.toScene(details.localPosition);
+    final lineToRemove = _lines.firstWhere(
+          (line) => distanceToSegment(sceneTap, line.start, line.end) < 10.0,
+      orElse: () => Line(Offset.zero, Offset.zero),
+    );
+
+    if (lineToRemove.start == Offset.zero && lineToRemove.end == Offset.zero) return;
+
+    // 🔍 선 위 문들 찾기
+    final doorsToRemove = _doors.where((door) {
+      return distanceToSegment(door, lineToRemove.start, lineToRemove.end) < 5.0;
+    }).toSet();
+
+    setState(() {
+      _lines.remove(lineToRemove);
+      _lines = List.of(_lines); // 🔁 강제 갱신
+
+      _doors.removeAll(doorsToRemove);
+      _doors = Set.of(_doors); // 🔁 강제 갱신
+    });
+  }
+
+  Offset snapToGrid(Offset point) {
+    final x = (point.dx / _gridSize).round() * _gridSize;
+    final y = (point.dy / _gridSize).round() * _gridSize;
+    return Offset(x, y);
+  }
+
+  Line? findNearestLine(Offset point, double tolerance) {
+    Line? closestLine;
+    double minDistance = double.infinity;
+
+    for (final line in _lines) {
+      final distance = distanceToSegment(point, line.start, line.end);
+      if (distance < minDistance && distance <= tolerance) {
+        minDistance = distance;
+        closestLine = line;
+      }
+    }
+
+    return closestLine;
+  }
+
+  double distanceToSegment(Offset p, Offset a, Offset b) {
+    final ap = p - a;
+    final ab = b - a;
+    final abLenSq = ab.dx * ab.dx + ab.dy * ab.dy;
+    if (abLenSq == 0.0) return (p - a).distance;
+
+    final t = (ap.dx * ab.dx + ap.dy * ab.dy) / abLenSq;
+    final clampedT = t.clamp(0.0, 1.0);
+    final projection = a + ab * clampedT;
+    return (p - projection).distance;
+  }
+
+  Offset projectPointOntoSegment(Offset p, Offset a, Offset b) {
+    final ap = p - a;
+    final ab = b - a;
+    final abLenSq = ab.dx * ab.dx + ab.dy * ab.dy;
+    if (abLenSq == 0.0) return a;
+
+    final t = (ap.dx * ab.dx + ap.dy * ab.dy) / abLenSq;
+    final clampedT = t.clamp(0.0, 1.0);
+    return a + ab * clampedT;
+  }
+
+  Offset clampPointOnLineSegment(Offset p, Offset a, Offset b, double minMargin) {
+    final ab = b - a;
+    final length = ab.distance;
+    if (length == 0) return a;
+
+    final t = ((p - a).dx * ab.dx + (p - a).dy * ab.dy) / (length * length);
+    final clampedT = t.clamp(minMargin / length, 1.0 - minMargin / length);
+    return a + ab * clampedT;
+  }
+
+  bool linesIntersectButNotAtEndpoints(Line l1, Line l2) {
+    final intersects = doLinesIntersect(l1.start, l1.end, l2.start, l2.end);
+    if (!intersects) return false;
+
+    final intersection = getIntersectionPoint(l1.start, l1.end, l2.start, l2.end);
+    if (intersection == null) return true;
+
+    final endpoints = {l1.start, l1.end, l2.start, l2.end};
+    return !endpoints.any((e) => (e - intersection).distance < 0.001);
+  }
+
+  bool doLinesIntersect(Offset a1, Offset a2, Offset b1, Offset b2) {
+    double ccw(Offset p1, Offset p2, Offset p3) {
+      return (p2.dx - p1.dx) * (p3.dy - p1.dy) - (p2.dy - p1.dy) * (p3.dx - p1.dx);
+    }
+
+    return (ccw(a1, a2, b1) * ccw(a1, a2, b2) <= 0) &&
+        (ccw(b1, b2, a1) * ccw(b1, b2, a2) <= 0);
+  }
+
+  Offset? getIntersectionPoint(Offset p1, Offset p2, Offset p3, Offset p4) {
+    final a1 = p2.dy - p1.dy;
+    final b1 = p1.dx - p2.dx;
+    final c1 = a1 * p1.dx + b1 * p1.dy;
+
+    final a2 = p4.dy - p3.dy;
+    final b2 = p3.dx - p4.dx;
+    final c2 = a2 * p3.dx + b2 * p3.dy;
+
+    final delta = a1 * b2 - a2 * b1;
+    if (delta.abs() < 1e-6) return null;
+
+    final x = (b2 * c1 - b1 * c2) / delta;
+    final y = (a1 * c2 - a2 * c1) / delta;
+    return Offset(x, y);
   }
 
   @override
@@ -62,24 +207,29 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
         onPointerDown: (_) => notifier.onPointerDown(),
         onPointerUp: (_) => notifier.onPointerUp(),
         onPointerCancel: (_) => notifier.onPointerCancel(),
-        child: InteractiveViewer(
-          transformationController: _transform,
-          panEnabled: !canDraw,
-          scaleEnabled: !canDraw,
-          minScale: 0.5,
-          maxScale: 3.0,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onPanStart: canDraw ? _onPanStart : null,
-            onPanUpdate: canDraw ? _onPanUpdate : null,
-            onPanEnd: canDraw ? _onPanEnd : null,
-            child: CustomPaint(
-              size: const Size(1000, 1000),
-              painter: GridPainter(
-                gridSize: _gridSize,
-                lines: _lines,
-                previewStart: _startPoint,
-                previewEnd: _previewPoint,
+        child: GestureDetector(
+          onDoubleTapDown: _handleDoubleTap,
+          onLongPressStart: _handleLongPress,
+          child: InteractiveViewer(
+            transformationController: _transform,
+            panEnabled: !canDraw,
+            scaleEnabled: !canDraw,
+            minScale: 0.5,
+            maxScale: 3.0,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onPanStart: canDraw ? _onPanStart : null,
+              onPanUpdate: canDraw ? _onPanUpdate : null,
+              onPanEnd: canDraw ? _onPanEnd : null,
+              child: CustomPaint(
+                size: const Size(1000, 1000),
+                painter: GridPainter(
+                  gridSize: _gridSize,
+                  lines: _lines,
+                  previewStart: _startPoint,
+                  previewEnd: _previewPoint,
+                  doors: _doors,
+                ),
               ),
             ),
           ),
