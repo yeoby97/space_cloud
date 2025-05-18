@@ -1,3 +1,5 @@
+// TODO : Provider들을 Riverpod으로 바꾸기. 엄청난 대공사 예정.
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
