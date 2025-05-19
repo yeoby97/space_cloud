@@ -216,6 +216,7 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
             scaleEnabled: !canDraw,
             minScale: 0.5,
             maxScale: 3.0,
+            boundaryMargin: const EdgeInsets.all(double.infinity),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onPanStart: canDraw ? _onPanStart : null,

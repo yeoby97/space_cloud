@@ -4,13 +4,17 @@ import 'line.dart';
 
 class GridPainter extends CustomPainter {
   final double gridSize;
+  final double width;
+  final double height;
   final List<Line> lines;
   final Offset? previewStart;
   final Offset? previewEnd;
   final Set<Offset> doors;
 
   GridPainter({
-    required this.gridSize,
+    this.gridSize = 50.0,
+    this.width = 1000.0,
+    this.height = 1000.0,
     required this.lines,
     this.previewStart,
     this.previewEnd,
@@ -23,12 +27,12 @@ class GridPainter extends CustomPainter {
       ..color = Colors.grey[300]!
       ..strokeWidth = 1.0;
 
-    for (double x = 0; x <= size.width; x += gridSize) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    for (double x = 0; x <= width; x += gridSize) {
+      canvas.drawLine(Offset(x, 0), Offset(x, height), gridPaint);
     }
 
-    for (double y = 0; y <= size.height; y += gridSize) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    for (double y = 0; y <= height; y += gridSize) {
+      canvas.drawLine(Offset(0, y), Offset(width, y), gridPaint);
     }
 
     final linePaint = Paint()
