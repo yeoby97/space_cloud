@@ -57,7 +57,6 @@ class GridPainter extends CustomPainter {
     final doorPaint = Paint()..color = Colors.brown;
 
     for (final door in doors) {
-      // 문과 가장 가까운 선 방향으로 회전
       Line? nearestLine;
       double minDistance = double.infinity;
 
@@ -79,7 +78,6 @@ class GridPainter extends CustomPainter {
       canvas.translate(door.dx, door.dy);
       canvas.rotate(angle);
 
-      // 문 길이 늘림 (0.5)
       final rect = Rect.fromCenter(
         center: Offset.zero,
         width: gridSize * 0.5,

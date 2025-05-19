@@ -4,7 +4,6 @@ import 'package:space_cloud/main/warehouse/register/blueprint/touch_counter.dart
 
 import 'grid_painter.dart';
 import 'line.dart';
-import 'dart:math';
 
 class BlueprintEditorScreen extends StatefulWidget {
   const BlueprintEditorScreen({super.key});
@@ -14,7 +13,7 @@ class BlueprintEditorScreen extends StatefulWidget {
 }
 
 class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
-  late var _lines = <Line>[]; // 👈 참조 갱신 가능하게 변경
+  late var _lines = <Line>[];
   late Set<Offset> _doors = {};
   Offset? _startPoint;
   Offset? _previewPoint;
@@ -89,17 +88,16 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
 
     if (lineToRemove.start == Offset.zero && lineToRemove.end == Offset.zero) return;
 
-    // 🔍 선 위 문들 찾기
     final doorsToRemove = _doors.where((door) {
       return distanceToSegment(door, lineToRemove.start, lineToRemove.end) < 5.0;
     }).toSet();
 
     setState(() {
       _lines.remove(lineToRemove);
-      _lines = List.of(_lines); // 🔁 강제 갱신
+      _lines = List.of(_lines);
 
       _doors.removeAll(doorsToRemove);
-      _doors = Set.of(_doors); // 🔁 강제 갱신
+      _doors = Set.of(_doors);
     });
   }
 
