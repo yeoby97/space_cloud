@@ -16,34 +16,33 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
   late var _lines = <Line>[];
   late Set<Offset> _doors = {};
   Offset? _startPoint;
-  Offset? _previewPoint;
+  final ValueNotifier<Offset?> _previewPoint = ValueNotifier(null);
   final double _gridSize = 50.0;
   final _transform = TransformationController();
 
   void _onPanStart(DragStartDetails details) {
-    final local = details.localPosition;
+    final local = _transform.toScene(details.localPosition);
     setState(() {
       _startPoint = snapToGrid(local);
-      _previewPoint = local;
+      _previewPoint.value = local;
     });
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    setState(() {
-      _previewPoint = details.localPosition;
-    });
+    final local = _transform.toScene(details.localPosition);
+    _previewPoint.value = local;
   }
 
   void _onPanEnd(DragEndDetails details) {
-    if (_startPoint != null && _previewPoint != null) {
-      final snappedEnd = snapToGrid(_previewPoint!);
+    if (_startPoint != null && _previewPoint.value != null) {
+      final snappedEnd = snapToGrid(_previewPoint.value!);
       final newLine = Line(_startPoint!, snappedEnd);
 
       final overlaps = _lines.any((existing) => linesIntersectButNotAtEndpoints(newLine, existing));
       if (overlaps) {
         setState(() {
           _startPoint = null;
-          _previewPoint = null;
+          _previewPoint.value = null;
         });
         return;
       }
@@ -51,7 +50,7 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
       setState(() {
         _lines.add(newLine);
         _startPoint = null;
-        _previewPoint = null;
+        _previewPoint.value = null;
       });
     }
   }
@@ -95,7 +94,6 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
     setState(() {
       _lines.remove(lineToRemove);
       _lines = List.of(_lines);
-
       _doors.removeAll(doorsToRemove);
       _doors = Set.of(_doors);
     });
@@ -198,6 +196,9 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
     final notifier = context.read<TouchCounterNotifier>();
     final canDraw = fingerCount <= 1;
 
+    final scale = _transform.value.getMaxScaleOnAxis();
+    final scaledSize = 1000 / scale;
+
     return Scaffold(
       appBar: AppBar(title: Text('건물 도면 작성')),
       body: Listener(
@@ -205,29 +206,40 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
         onPointerDown: (_) => notifier.onPointerDown(),
         onPointerUp: (_) => notifier.onPointerUp(),
         onPointerCancel: (_) => notifier.onPointerCancel(),
-        child: GestureDetector(
-          onDoubleTapDown: _handleDoubleTap,
-          onLongPressStart: _handleLongPress,
-          child: InteractiveViewer(
-            transformationController: _transform,
-            panEnabled: !canDraw,
-            scaleEnabled: !canDraw,
-            minScale: 0.5,
-            maxScale: 3.0,
-            boundaryMargin: const EdgeInsets.all(double.infinity),
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onPanStart: canDraw ? _onPanStart : null,
-              onPanUpdate: canDraw ? _onPanUpdate : null,
-              onPanEnd: canDraw ? _onPanEnd : null,
-              child: CustomPaint(
-                size: const Size(1000, 1000),
-                painter: GridPainter(
-                  gridSize: _gridSize,
-                  lines: _lines,
-                  previewStart: _startPoint,
-                  previewEnd: _previewPoint,
-                  doors: _doors,
+        child: Center(
+          child: SizedBox(
+            width: 1000,
+            height: 1000,
+            child: ClipRect(
+              child: InteractiveViewer(
+                transformationController: _transform,
+                panEnabled: !canDraw,
+                scaleEnabled: !canDraw,
+                minScale: 0.5,
+                maxScale: 3.0,
+                constrained: false,
+                clipBehavior: Clip.none,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onPanStart: canDraw ? _onPanStart : null,
+                  onPanUpdate: canDraw ? _onPanUpdate : null,
+                  onPanEnd: canDraw ? _onPanEnd : null,
+                  onDoubleTapDown: _handleDoubleTap,
+                  onLongPressStart: _handleLongPress,
+                  child: ValueListenableBuilder<Offset?>(
+                    valueListenable: _previewPoint,
+                    builder: (context, preview, _) => CustomPaint(
+                      size: Size(scaledSize, scaledSize),
+                      painter: GridPainter(
+                        gridSize: _gridSize,
+                        lines: _lines,
+                        previewStart: _startPoint,
+                        previewEnd: preview,
+                        doors: _doors,
+                        transform: _transform.value,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

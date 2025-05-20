@@ -10,6 +10,7 @@ class GridPainter extends CustomPainter {
   final Offset? previewStart;
   final Offset? previewEnd;
   final Set<Offset> doors;
+  final Matrix4 transform;
 
   GridPainter({
     this.gridSize = 50.0,
@@ -19,10 +20,14 @@ class GridPainter extends CustomPainter {
     this.previewStart,
     this.previewEnd,
     required this.doors,
+    required this.transform,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.transform(transform.storage);
+
     final gridPaint = Paint()
       ..color = Colors.grey[300]!
       ..strokeWidth = 1.0;
@@ -86,6 +91,8 @@ class GridPainter extends CustomPainter {
       canvas.drawRect(rect, doorPaint);
       canvas.restore();
     }
+
+    canvas.restore();
   }
 
   @override
@@ -93,7 +100,8 @@ class GridPainter extends CustomPainter {
     return old.lines != lines ||
         old.previewStart != previewStart ||
         old.previewEnd != previewEnd ||
-        old.doors != doors;
+        old.doors != doors ||
+        old.transform != transform;
   }
 
   double distanceToSegment(Offset p, Offset a, Offset b) {
