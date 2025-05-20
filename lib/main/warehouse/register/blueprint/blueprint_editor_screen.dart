@@ -2,34 +2,67 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:space_cloud/main/warehouse/register/blueprint/touch_counter.dart';
 
+import '../warehouse_register_view_model.dart';
 import 'grid_painter.dart';
 import 'line.dart';
 
 class BlueprintEditorScreen extends StatefulWidget {
-  const BlueprintEditorScreen({super.key});
+
+  const BlueprintEditorScreen({super.key,});
 
   @override
   State<BlueprintEditorScreen> createState() => _BlueprintEditorScreenState();
 }
 
 class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
-  late var _lines = <Line>[];
-  late Set<Offset> _doors = {};
+  late final RegisterViewModel viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    viewModel = context.read<RegisterViewModel>();
+  }
+
+  late var _lines = viewModel.lines;
+  late Set<Offset> _doors = viewModel.doors;
   Offset? _startPoint;
   final ValueNotifier<Offset?> _previewPoint = ValueNotifier(null);
-  final double _gridSize = 50.0;
+  final double _gridSize = 30.0;
   final _transform = TransformationController();
+  Line? _focusLine;
 
   void _onPanStart(DragStartDetails details) {
-    final local = _transform.toScene(details.localPosition);
+    final local = details.localPosition;
+    _startPoint = snapToGrid(local);
+    _previewPoint.value = local;
+
+    Set<Offset>? doorsToRemove;
+    if(_focusLine != null){
+      if(_focusLine!.start == _startPoint || _focusLine!.end == _startPoint){
+
+        doorsToRemove = _doors.where((door) {
+          return distanceToSegment(door, _focusLine!.start, _focusLine!.end) < 5.0;
+        }).toSet();
+
+        if(_focusLine!.start == _startPoint){
+          _startPoint = _focusLine!.end;
+        } else {
+          _startPoint = _focusLine!.start;
+        }
+        _lines.remove(_focusLine);
+        _focusLine = null;
+      }
+    }
+
     setState(() {
-      _startPoint = snapToGrid(local);
-      _previewPoint.value = local;
+      if(doorsToRemove != null){
+        _doors.removeAll(doorsToRemove);
+      }
     });
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    final local = _transform.toScene(details.localPosition);
+    final local = details.localPosition;
     _previewPoint.value = local;
   }
 
@@ -56,11 +89,11 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
   }
 
   void _handleDoubleTap(TapDownDetails details) {
-    final sceneTap = _transform.toScene(details.localPosition);
-    final nearbyLine = findNearestLine(sceneTap, 15.0);
+    final location = details.localPosition;
+    final nearbyLine = findNearestLine(location, 15.0);
     if (nearbyLine == null) return;
 
-    final projected = projectPointOntoSegment(sceneTap, nearbyLine.start, nearbyLine.end);
+    final projected = projectPointOntoSegment(location, nearbyLine.start, nearbyLine.end);
     final clamped = clampPointOnLineSegment(projected, nearbyLine.start, nearbyLine.end, 10.0);
 
     final existing = _doors.firstWhere(
@@ -79,7 +112,8 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
   }
 
   void _handleLongPress(LongPressStartDetails details) {
-    final sceneTap = _transform.toScene(details.localPosition);
+    _focusLine = null;
+    final sceneTap = details.localPosition;
     final lineToRemove = _lines.firstWhere(
           (line) => distanceToSegment(sceneTap, line.start, line.end) < 10.0,
       orElse: () => Line(Offset.zero, Offset.zero),
@@ -190,52 +224,71 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
     return Offset(x, y);
   }
 
+  void _focus(TapUpDetails details){
+    final location = details.localPosition;
+    final lineToFocus = _lines.firstWhere(
+          (line) => distanceToSegment(location, line.start, line.end) < 10.0,
+      orElse: () => Line(Offset.zero, Offset.zero),
+    );
+    setState(() {
+      _focusLine = lineToFocus;
+    });
+    return;
+  }
+
   @override
   Widget build(BuildContext context) {
     final fingerCount = context.watch<TouchCounterNotifier>().state;
     final notifier = context.read<TouchCounterNotifier>();
     final canDraw = fingerCount <= 1;
-
     final scale = _transform.value.getMaxScaleOnAxis();
     final scaledSize = 1000 / scale;
 
-    return Scaffold(
-      appBar: AppBar(title: Text('건물 도면 작성')),
-      body: Listener(
-        behavior: HitTestBehavior.opaque,
-        onPointerDown: (_) => notifier.onPointerDown(),
-        onPointerUp: (_) => notifier.onPointerUp(),
-        onPointerCancel: (_) => notifier.onPointerCancel(),
-        child: Center(
-          child: SizedBox(
-            width: 1000,
-            height: 1000,
-            child: ClipRect(
-              child: InteractiveViewer(
-                panEnabled: !canDraw,
-                scaleEnabled: !canDraw,
-                minScale: 0.5,
-                maxScale: 3.0,
-                constrained: false,
-                clipBehavior: Clip.none,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onPanStart: canDraw ? _onPanStart : null,
-                  onPanUpdate: canDraw ? _onPanUpdate : null,
-                  onPanEnd: canDraw ? _onPanEnd : null,
-                  onDoubleTapDown: _handleDoubleTap,
-                  onLongPressStart: _handleLongPress,
-                  child: ValueListenableBuilder<Offset?>(
-                    valueListenable: _previewPoint,
-                    builder: (context, preview, _) => CustomPaint(
-                      size: Size(scaledSize, scaledSize),
-                      painter: GridPainter(
-                        gridSize: _gridSize,
-                        lines: _lines,
-                        previewStart: _startPoint,
-                        previewEnd: preview,
-                        doors: _doors,
-                        transform: _transform.value,
+    return WillPopScope(
+      onWillPop: () async {
+        viewModel.drawChange(false);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text('건물 도면 작성')),
+        body: Listener(
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: (_) => notifier.onPointerDown(),
+          onPointerUp: (_) => notifier.onPointerUp(),
+          onPointerCancel: (_) => notifier.onPointerCancel(),
+          child: Center(
+            child: SizedBox(
+              width: 1000,
+              height: 1000,
+              child: ClipRect(
+                child: InteractiveViewer(
+                  panEnabled: !canDraw,
+                  scaleEnabled: !canDraw,
+                  minScale: 0.5,
+                  maxScale: 3.0,
+                  constrained: false,
+                  clipBehavior: Clip.none,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTapUp: _focus,
+                    onPanStart: canDraw ? _onPanStart : null,
+                    onPanUpdate: canDraw ? _onPanUpdate : null,
+                    onPanEnd: canDraw ? _onPanEnd : null,
+                    onDoubleTapDown: _handleDoubleTap,
+                    onLongPressStart: _handleLongPress,
+                    child: ValueListenableBuilder<Offset?>(
+                      valueListenable: _previewPoint,
+                      builder: (context, preview, _) => CustomPaint(
+                        size: Size(scaledSize, scaledSize),
+                        painter: GridPainter(
+                          gridSize: _gridSize,
+                          lines: _lines,
+                          previewStart: _startPoint,
+                          previewEnd: preview,
+                          doors: _doors,
+                          transform: _transform.value,
+                          lineToFocus: _focusLine,
+                        ),
                       ),
                     ),
                   ),

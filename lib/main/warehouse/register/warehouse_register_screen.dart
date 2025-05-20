@@ -32,7 +32,13 @@ class Body extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<RegisterViewModel>();
-    return viewModel.isLayout ? const Layout() : const WarehouseRegisterBody();
+    if (viewModel.isDraw) {
+      return const BlueprintEditorScreen();
+    } else if (viewModel.isLayout) {
+      return const Layout();
+    } else {
+      return const WarehouseRegisterBody();
+    }
   }
 }
 
@@ -126,10 +132,7 @@ class WarehouseRegisterBody extends StatelessWidget {
                       width: double.infinity,
                       child: FloatingActionButton.extended(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const BlueprintEditorScreen()),
-                          );
+                          viewModel.drawChange(true);
                         },
                         label: const Text("건물 도면 그리기", style: TextStyle(fontSize: 16)),
                         icon: const Icon(Icons.check),

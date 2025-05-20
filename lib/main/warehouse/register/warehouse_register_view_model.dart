@@ -8,6 +8,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../data/warehouse.dart';
 import '../../home/search/search_screen.dart';
+import 'blueprint/line.dart';
 
 class RegisterViewModel extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -15,9 +16,37 @@ class RegisterViewModel extends ChangeNotifier {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
   bool _isLayout = false;
+  List<XFile> _images = [];
+  String? address;
+  LatLng? location;
+  String? detailAddress;
+  final priceController = TextEditingController();
+  int? price;
+  final countController = TextEditingController();
+  final countFocusNode = FocusNode();
+  int? _count;
+  bool _isDraw = false;
+  final rowController = TextEditingController();
+  final rowFocusNode = FocusNode();
+  int? _row;
+  final colController = TextEditingController();
+  final colFocusNode = FocusNode();
+  int? _col;
+  final List<(int, int)> _pickedBox = [];
+  final _lines = <Line>[];
+  final Set<Offset> _doors = {};
+
+  bool get isDraw => _isDraw;
+  bool get isLoading => _isLoading;
   bool get isLayout => _isLayout;
+  List<XFile> get images => _images;
+  int? get count => _count;
+  int? get row => _row;
+  int? get col => _col;
+  List<(int, int)> get pickedBox => _pickedBox;
+  List<Line> get lines => _lines;
+  Set<Offset> get doors => _doors;
 
   void toggleLayout() {
     _isLayout = !_isLayout;
@@ -28,9 +57,6 @@ class RegisterViewModel extends ChangeNotifier {
     _isLoading = value;
     notifyListeners();
   }
-
-  List<XFile> _images = [];
-  List<XFile> get images => _images;
 
   void deletePhoto(int index) {
     _images.removeAt(index);
@@ -47,9 +73,6 @@ class RegisterViewModel extends ChangeNotifier {
     }
   }
 
-  String? address;
-  LatLng? location;
-
   void selectLocation(BuildContext context) async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const SearchScreen()),
@@ -61,42 +84,30 @@ class RegisterViewModel extends ChangeNotifier {
     }
   }
 
-  String? detailAddress;
-  final priceController = TextEditingController();
-  int? price;
-
-  final countController = TextEditingController();
-  final countFocusNode = FocusNode();
-  int? _count;
-  int? get count => _count;
   void countChange(int? value) {
     _count = value;
     clearBox();
     notifyListeners();
   }
 
-  final rowController = TextEditingController();
-  final rowFocusNode = FocusNode();
-  int? _row;
-  int? get row => _row;
+  void drawChange(bool value) {
+    _isDraw = value;
+    notifyListeners();
+  }
+
   void rowChange(int? value) {
     _row = value;
     clearBox();
     notifyListeners();
   }
 
-  final colController = TextEditingController();
-  final colFocusNode = FocusNode();
-  int? _col;
-  int? get col => _col;
+
   void colChange(int? value) {
     _col = value;
     clearBox();
     notifyListeners();
   }
 
-  final List<(int, int)> _pickedBox = [];
-  List<(int, int)> get pickedBox => _pickedBox;
 
   void touchBox(int row, int col) {
     if (isBoxSelected(row, col)) {

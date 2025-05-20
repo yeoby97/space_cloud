@@ -11,6 +11,7 @@ class GridPainter extends CustomPainter {
   final Offset? previewEnd;
   final Set<Offset> doors;
   final Matrix4 transform;
+  final Line? lineToFocus;
 
   GridPainter({
     this.gridSize = 50.0,
@@ -21,6 +22,7 @@ class GridPainter extends CustomPainter {
     this.previewEnd,
     required this.doors,
     required this.transform,
+    required this.lineToFocus,
   });
 
   @override
@@ -44,11 +46,11 @@ class GridPainter extends CustomPainter {
       ..color = Colors.blue
       ..strokeWidth = 3.0;
 
-    final dotPaint = Paint()..color = Colors.red;
+    final dotPaint = Paint()..color = Colors.transparent;
 
     for (final line in lines) {
       canvas.drawLine(line.start, line.end, linePaint);
-      canvas.drawCircle(line.start, 5, dotPaint);
+      canvas.drawCircle(line.start, 5,dotPaint);
       canvas.drawCircle(line.end, 5, dotPaint);
     }
 
@@ -56,6 +58,7 @@ class GridPainter extends CustomPainter {
       final previewPaint = Paint()
         ..color = Colors.blue.withAlpha(75)
         ..strokeWidth = 2.0;
+      canvas.drawCircle(previewStart!, 5, Paint()..color = Colors.red);
       canvas.drawLine(previewStart!, previewEnd!, previewPaint);
     }
 
@@ -85,11 +88,16 @@ class GridPainter extends CustomPainter {
 
       final rect = Rect.fromCenter(
         center: Offset.zero,
-        width: gridSize * 0.5,
-        height: gridSize * 0.1,
+        width: gridSize * 0.8,
+        height: gridSize * 0.3,
       );
       canvas.drawRect(rect, doorPaint);
       canvas.restore();
+    }
+
+    if (lineToFocus != null) {
+      canvas.drawCircle(lineToFocus!.start, 5, Paint()..color = Colors.red);
+      canvas.drawCircle(lineToFocus!.end, 5, Paint()..color = Colors.red);
     }
 
     canvas.restore();
@@ -101,7 +109,8 @@ class GridPainter extends CustomPainter {
         old.previewStart != previewStart ||
         old.previewEnd != previewEnd ||
         old.doors != doors ||
-        old.transform != transform;
+        old.transform != transform ||
+        old.lineToFocus != lineToFocus;
   }
 
   double distanceToSegment(Offset p, Offset a, Offset b) {
