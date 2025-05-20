@@ -13,7 +13,7 @@ class TouchCounterNotifier extends ChangeNotifier {
 
   void onPointerUp() {
     _count = (_count - 1).clamp(0, 10);
-    notifyListeners();
+
   }
 
   void onPointerCancel() {

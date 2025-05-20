@@ -212,7 +212,6 @@ class _BlueprintEditorScreenState extends State<BlueprintEditorScreen> {
             height: 1000,
             child: ClipRect(
               child: InteractiveViewer(
-                transformationController: _transform,
                 panEnabled: !canDraw,
                 scaleEnabled: !canDraw,
                 minScale: 0.5,
